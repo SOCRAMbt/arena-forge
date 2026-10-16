@@ -1,0 +1,13 @@
+# ---> arena-forge: artefactos locales, runs y resultados (nunca commitear)
+.arena/
+runs/
+reports/*.html
+reports/*.md
+!reports/.gitkeep
+worktrees/
+tmp/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+*.log
