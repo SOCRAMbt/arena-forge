@@ -14,6 +14,10 @@ Estado: completado el vertical slice + E2E reales. Todo verificado abajo.
 - [x] Informes MD+HTML con escape en `reports/` (3 runs)
 - [x] `ARCHITECTURE.md`, `THREAT_MODEL.md`, 5 ADRs, `CHANGELOG.md`, `README.md`, `LICENSE`
 - [x] Benchmark scheduler + gates (`benchmark` → OK)
+- [x] Patch adversarial completo (attack/defend v2 + juez v2 90-84)
+- [x] README profesional + `demo/` + CHANGELOG 0.2.0
+- [ ] Publicar en GitHub SOCRAMbt/Crew → renombrar a arena-forge
+  (BLOQUEADO: sin `gh`, sin credencial, sin SSH. Comandos exactos abajo.)
 - [ ] `git init` + commit inicial (pendiente: hacerlo al cierre)
 
 Bloqueadores: ninguno. Coste real Answer E2E: 23 llamadas (19 + 4 reintentos).

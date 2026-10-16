@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.2.0 — 2026-10-16
+
+- Patch Arena con ciclo adversarial completo: ataques solo-lectura al rival,
+  defensas con concede/rebut y revisión versionada (v1 preservada), re-gates
+  y juez ciego sobre v2 (90–84 con evidencia por línea).
+- README profesional con evidencia real, `demo/` con los 3 informes.
+- `resolve_patch_winner()` compartido por `report` y `apply`.
+
 ## 0.1.0 — 2026-10-16
 
 - Motor `arena_forge.py`: modos answer/patch, 15 comandos
