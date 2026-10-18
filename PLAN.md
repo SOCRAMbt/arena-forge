@@ -1,23 +1,38 @@
-# ARENA FORGE — plan de ejecución (tracker vivo)
+# ARENA FORGE — tracker vivo (v1.0 spec-compliant)
 
-Estado: completado el vertical slice + E2E reales. Todo verificado abajo.
+Objetivo: alinear el sistema con `ARENA_FORGE_ESPECIFICACION_TECNICA_INTEGRAL.md`
+(OpenCode v2.0.32 verificada) y corroborarlo con subagentes.
+Estado global: **PARTIAL → en curso**.
 
-- [x] Fase 0: reconocimiento forense (`docs/RECONNAISSANCE.md`)
-- [x] Scaffold del subproyecto aislado `arena-forge/`
-- [x] Proveniencia upstream (commit, hashes, licencia)
-- [x] Motor: `arena_forge.py` (15 comandos) + vendor con patch OpenCode
-- [x] Tests deterministas del scheduler (9 passed)
-- [x] Skill nativa `.opencode/skills/arena-forge/SKILL.md` + 4 agentes mínimos
-- [x] E2E Answer Arena real (4 candidatos, 23 llamadas, campeón a002)
-- [x] Fixture Patch Arena + gates + E2E (cand-a PASS/cand-b PASS, juez ciego → cand-a)
-- [x] `NO_SHIP` (buggy FAIL), `resume` sin duplicar, outputs inválidos, `apply` con --approve
-- [x] Informes MD+HTML con escape en `reports/` (3 runs)
-- [x] `ARCHITECTURE.md`, `THREAT_MODEL.md`, 5 ADRs, `CHANGELOG.md`, `README.md`, `LICENSE`
-- [x] Benchmark scheduler + gates (`benchmark` → OK)
-- [x] Patch adversarial completo (attack/defend v2 + juez v2 90-84)
-- [x] README profesional + `demo/` + CHANGELOG 0.2.0
-- [x] Publicar en GitHub: rama `master` pusheada a SOCRAMbt/Crew (`7233d0e`)
-- [ ] Renombrar el repo a `arena-forge` (requiere web UI o `gh`; ver abajo)
-- [ ] `git init` + commit inicial (pendiente: hacerlo al cierre)
+## Gap analysis (spec → estado)
 
-Bloqueadores: ninguno. Coste real Answer E2E: 23 llamadas (19 + 4 reintentos).
+- [x] §0-2 modos answer/patch/benchmark
+- [ ] §3 componentes: Runtime Adapter, Agent E, Score Calculator, Benchmark Runner,
+      Artifact Store, Policy/Budget Manager, Audit Ledger, Isolation Manager
+- [ ] §4 Agente E adaptativo (decisiones estructuradas, presupuesto, hipótesis)
+- [ ] §5 roles/permisos mínimos (scout/implementer/reviewer/judge ya; falta test-designer)
+- [ ] §6 ciclo de vida + §8 máquina de estados formal (CREATED..COMPLETED)
+- [ ] §7 CLI completo (state/ledger/decide/adapter/verify/bench)
+- [ ] §9 contratos Run/Candidate/Job/GateResult/Decision + validación estricta
+- [ ] §10 GateResult con clase de fallo, SCORE determinista con evidencia
+- [ ] §11 threat model (existe; ampliar 16 amenazas)
+- [ ] §12 presupuesto/perfiles quick|standard|extreme (+confirmación)
+- [ ] §13 adapter V2 real + alternativa diffs
+- [ ] §14 ledger append-only + reanudación reconciliada
+- [ ] §15 informe con todos los campos obligatorios
+- [ ] §16 22 pruebas obligatorias
+- [ ] §17 artefactos obligatorios (más traces/matriz)
+- [ ] §18 18 AC (AF-AC-001..018) con evidencia
+- [ ] §21 matriz de trazabilidad ampliada
+- [ ] Publicar en GitHub (approval ya dado) + rename a arena-forge
+
+## Plan incremental (§19)
+
+1. contratos + estado + ledger (tests primero)
+2. adapter V2 (probe real) + E
+3. gate engine + score determinista
+4. CLI extendido + informe completo
+5. tests 22 categorías + fixtures
+6. docs + matriz + ADRs nuevos
+7. verificación con subagentes (read-only) por AC
+8. benchmark honesto (E declarado no demostrado salvo medición)

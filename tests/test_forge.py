@@ -1,4 +1,7 @@
-"""Tests de Arena Forge. Solo stdlib (unittest). E2E reales aparte (demo/)."""
+"""Tests de Arena Forge — mapa a las 22 categorias de la especificacion (§16).
+
+Solo stdlib (unittest). Los E2E reales con subagentes viven en demo/.
+"""
 import json
 import os
 import shutil
@@ -11,17 +14,25 @@ FORGE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, FORGE_ROOT)
 import arena_forge  # noqa: E402
 from arena_forge import ForgeError  # noqa: E402
+from forge import (adapter, agent_e, benchmark as bench_mod, contracts,  # noqa: E402
+                   gates as gate_engine, isolation, ledger, report as report_mod,
+                   score as score_mod, state)
 
-BRACKET = os.path.join(FORGE_ROOT, "vendor", "arena-skill", "bracket.py")
 STRATEGIES = os.path.join(FORGE_ROOT, "vendor", "arena-skill", "strategies.json")
 FIX = os.path.join(FORGE_ROOT, "fixtures", "patch-demo")
 SUITE = os.path.join(FIX, "tests_protected", "test_protected.py")
+GOLD = os.path.join(FIX, "candidate_fixed")
+BUGGY = os.path.join(FIX, "baseline_buggy")
 
 
 def has_pytest():
     r = subprocess.run([sys.executable, "-m", "pytest", "--version"],
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return r.returncode == 0
+
+
+def ns(**kw):
+    return type("NS", (), kw)()
 
 
 class TempCwd(unittest.TestCase):
@@ -33,8 +44,9 @@ class TempCwd(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.tmp, True)
 
 
-class SchedulerTest(unittest.TestCase):
-    def test_sizes_and_deal(self):
+# ------------------------------------------------------- §16.1 reproducible
+class SchedulerDeterminismTest(unittest.TestCase):
+    def test_sizes_even_odd_and_single_winner(self):
         mod = arena_forge.load_bracket_module()
         data = mod.load_strategies(STRATEGIES)
         self.assertEqual(mod.combo_count(data), 15 * 12 * 12)
@@ -44,77 +56,253 @@ class SchedulerTest(unittest.TestCase):
             self.assertEqual(sizes[-1], 1)
             for a, b in zip(sizes, sizes[1:]):
                 self.assertEqual(b, (a + 1) // 2)
-        for n in (2, 3, 4, 5, 7, 8, 16, 100):
-            ok, _ = arena_forge.simulate_tournament(mod, n, seed=7)
-            self.assertTrue(ok, n)
-        # misma seed, mismo reparto (scheduler reproducible)
-        mod2 = arena_forge.load_bracket_module()
-        d1 = mod.deal(8, 7, mod.load_strategies(STRATEGIES))
-        d2 = mod2.deal(8, 7, mod2.load_strategies(STRATEGIES))
+            self.assertTrue(arena_forge.simulate_tournament(mod, n, seed=7)[0], n)
+
+    def test_same_seed_same_deal(self):
+        m1 = arena_forge.load_bracket_module()
+        m2 = arena_forge.load_bracket_module()
+        d1 = m1.deal(8, 7, m1.load_strategies(STRATEGIES))
+        d2 = m2.deal(8, 7, m2.load_strategies(STRATEGIES))
         self.assertEqual(sorted(map(tuple, d1)), sorted(map(tuple, d2)))
+        self.assertEqual(len(set(d1)), 8)          # sin tarjetas repetidas
+
+    def test_different_seed_differs(self):
+        m = arena_forge.load_bracket_module()
+        a = m.deal(20, 1, m.load_strategies(STRATEGIES))
+        b = m.deal(20, 2, m.load_strategies(STRATEGIES))
+        self.assertNotEqual(sorted(map(tuple, a)), sorted(map(tuple, b)))
 
 
-class ForgeInitTest(TempCwd):
-    def test_init_writes_governance(self):
-        ns = argparse_ns(mode="answer", agents=2, quick=False, seed=7,
-                         task="haiku", task_file=None, baseline_file=None,
-                         suite=None, wave=10, dir=None)
-        self.assertEqual(arena_forge.cmd_init(ns), 0)
-        d = arena_forge.run_dir_from(ns)
-        fg = arena_forge.load_forge(d)
-        self.assertEqual(fg["version"], 1)
-        self.assertEqual(fg["mode"], "answer")
-        self.assertEqual(fg["status"], "RUNNING")
-        self.assertEqual(fg["task_sha"], arena_forge.sha_text("haiku"))
-        self.assertTrue(os.path.isfile(os.path.join(d, "arena.json")))
+# --------------------------------------------------------- §16.6 contratos
+class ContractsTest(unittest.TestCase):
+    def test_run_validation(self):
+        good = {"run_id": "r", "schema_version": 2, "mode": "answer",
+                "status": "RUNNING", "phase": "RUNNING", "created": 1, "seed": 7,
+                "task_sha": "a" * 64, "rubric_sha": "b" * 64, "cards_sha": "c" * 64,
+                "budget": {}, "policy_version": "e-policy-v1"}
+        self.assertEqual(contracts.validate_run(good), [])
+        bad = dict(good); bad.pop("policy_version")
+        self.assertTrue(contracts.validate_run(bad))
+        bad2 = dict(good); bad2["mode"] = "wrong"
+        self.assertTrue(contracts.validate_run(bad2))
+
+    def test_job_and_decision_ranges(self):
+        self.assertTrue(contracts.validate_job({"job_id": "j", "run_id": "r",
+                                                "phase": "p", "kind": "k",
+                                                "input_hash": "h", "state": "BLOCKED",
+                                                "attempts": 1, "output_expected": "o"}))
+        self.assertFalse(contracts.validate_job({"job_id": "j", "run_id": "r",
+                                                 "phase": "p", "kind": "k",
+                                                 "input_hash": "h", "state": "PENDING",
+                                                 "attempts": 0, "output_expected": "o"}))
+        # NO_SHIP sin `winner` es CONTRATO VALIDO (el no-despacho no tiene ganador):
+        # validate_decision devuelve [] para el primer caso, error para WINNER sin ganador y
+        # para NO_SHIP con ganador (un NO_SHIP no puede declara un ganador).
+        self.assertEqual(contracts.validate_decision({"decision_id": "d", "run_id": "r",
+                                                      "state": "NO_SHIP", "reason": "x",
+                                                      "ts": 1, "policy_version": "p"}), [])
+        self.assertTrue(contracts.validate_decision({"decision_id": "d", "run_id": "r",
+                                                     "state": "WINNER", "reason": "x",
+                                                     "ts": 1, "policy_version": "p"}))
+
+    def test_gate_and_judge_validation(self):
+        self.assertEqual(contracts.validate_gate_result(
+            {"gate_id": "g", "candidate": "c", "state": "PASS", "command": "pytest",
+             "ts": 1}), [])
+        self.assertTrue(contracts.validate_gate_result(
+            {"gate_id": "g", "candidate": "c", "state": "OK", "command": "pytest",
+             "ts": 1}))
+        v = {"winner": "a", "scores": {"a": {"correctness": 11, "completeness": 5,
+                                             "specificity": 5, "robustness": 5,
+                                             "clarity": 5}}}
+        self.assertTrue(contracts.validate_judge_verdict(v, ["a"]))
+        v2 = {"winner": "z"}
+        self.assertTrue(contracts.validate_judge_verdict(v2, ["a"]))  # id desconocido
 
 
-class CancelGuardTest(TempCwd):
-    def test_collect_refused_after_cancel(self):
-        ns = argparse_ns(mode="answer", agents=2, quick=False, seed=7,
-                         task="t", task_file=None, baseline_file=None,
-                         suite=None, wave=10, dir=None)
-        arena_forge.cmd_init(ns)
-        d = arena_forge.run_dir_from(ns)
-        arena_forge.cmd_cancel(argparse_ns(dir=d, reason="demo"))
-        self.assertEqual(arena_forge.load_forge(d)["status"], "CANCELLED")
+# ------------------------------------------------------- §16.1/§8 estados
+class StateMachineTest(unittest.TestCase):
+    def test_legal_and_illegal(self):
+        self.assertTrue(state.can_transition("READY", "RUNNING")[0])
+        self.assertFalse(state.can_transition("COMPLETED", "RUNNING")[0])
+        self.assertFalse(state.can_transition("CREATED", "DECIDING")[0])
         with self.assertRaises(ForgeError):
-            arena_forge.cmd_passthrough("collect", argparse_ns(dir=d))
+            state.transition({"phase": "COMPLETED"}, "RUNNING")
+
+    def test_deciding_preconditions(self):
+        self.assertFalse(state.can_enter_deciding({}, False, True)[0])
+        self.assertFalse(state.can_enter_deciding({"g": {}}, True, False)[0])
+        self.assertTrue(state.can_enter_deciding({"g": {}}, True, True)[0])
+
+    def test_terminal_flags(self):
+        for s in ("COMPLETED", "NO_SHIP", "CANCELLED", "FAILED"):
+            self.assertTrue(state.is_terminal(s))
 
 
-class QuarantineTest(TempCwd):
-    def test_oversize_and_traversal(self):
-        os.makedirs("run1", exist_ok=True)
-        big = os.path.join("run1", "m.verdict.json")
-        with open(big, "wb") as fh:
-            fh.write(b"x" * (arena_forge.MAX_OUTPUT_BYTES + 1))
-        arena_forge.quarantine_oversize(os.path.abspath("run1"))
-        self.assertTrue(os.path.isfile(big + ".oversize"))
-        self.assertFalse(os.path.isfile(big))
-        outside = os.path.abspath(os.path.join("run1", "..", "evil.json"))
-        self.assertFalse(arena_forge.inside_run(os.path.abspath("run1"), outside))
+# ----------------------------------------------------- §16.18/§14 ledger
+class LedgerTest(unittest.TestCase):
+    def test_append_only_and_verify(self):
+        d = tempfile.mkdtemp(prefix="forge-led-")
+        self.addCleanup(shutil.rmtree, d, True)
+        ledger.append(d, "init", "a")
+        ledger.append(d, "phase", "b")
+        ledger.append(d, "decision", "c")
+        ok, problems = ledger.verify(d)
+        self.assertTrue(ok, problems)
+        self.assertEqual(len(ledger.read(d)), 3)
+        self.assertEqual(ledger.last_ref(d), 3)
+
+    def test_corrupt_line_flag_not_deleted(self):
+        d = tempfile.mkdtemp(prefix="forge-led2-")
+        self.addCleanup(shutil.rmtree, d, True)
+        ledger.append(d, "init", "a")
+        with open(os.path.join(d, ledger.LEDGER_FILE), "a", encoding="utf-8") as fh:
+            fh.write("{broken json\n")
+        ok, problems = ledger.verify(d)
+        self.assertFalse(ok)
+        self.assertTrue(any("corrupta" in p for p in problems))
+        self.assertEqual(len(ledger.read(d)), 2)   # no se borro
 
 
+# ------------------------------------------------ §16.8/§16.20 aislamiento
+class IsolationTest(unittest.TestCase):
+    def setUp(self):
+        self.d = tempfile.mkdtemp(prefix="forge-iso-")
+        os.makedirs(os.path.join(self.d, "candidates"))
+        self.addCleanup(shutil.rmtree, self.d, True)
+
+    def test_distinct_workspaces(self):
+        proof = isolation.ensure_workspaces(self.d, ["cand-a", "cand-b"])
+        self.assertTrue(proof["ok"])
+        self.assertFalse(proof["shared"])
+        self.assertNotEqual(proof["candidates"]["cand-a"]["realpath"],
+                            proof["candidates"]["cand-b"]["realpath"])
+
+    def test_duplicate_ids_detected(self):
+        proof = isolation.ensure_workspaces(self.d, ["cand-a", "cand-a"])
+        self.assertFalse(proof["ok"])
+        self.assertTrue(proof["shared"])
+
+    def test_diff_traversal_rejected(self):
+        ok, problems = isolation.validate_diff("--- a/../../etc/passwd\n+++ b/x\n")
+        self.assertFalse(ok)
+        self.assertTrue(problems)
+        ok2, _ = isolation.validate_diff("--- a/stats.py\n+++ b/stats.py\n+x\n")
+        self.assertTrue(ok2)
+
+
+# ------------------------------------------- §16.7/§16.9/§16.19 gates
 class GatesTest(unittest.TestCase):
     @unittest.skipUnless(has_pytest(), "pytest no instalado")
-    def test_buggy_fails_fixed_passes(self):
-        gb = arena_forge.run_gates(os.path.join(FIX, "baseline_buggy"), SUITE)
-        gf = arena_forge.run_gates(os.path.join(FIX, "candidate_fixed"), SUITE)
-        self.assertEqual(gb["verdict"], "FAIL")
-        self.assertEqual(gf["verdict"], "PASS")
-        self.assertTrue(gb["sha_ok"] and gf["sha_ok"])
+    def test_buggy_fails_gold_passes(self):
+        gb = gate_engine.run_gate(BUGGY, SUITE)
+        gf = gate_engine.run_gate(GOLD, SUITE)
+        self.assertEqual(gb["state"], "FAIL")
+        self.assertEqual(gf["state"], "PASS")
+        self.assertEqual(gb["failure_class"], "required_check_failed")
+        self.assertEqual(gb["suite_sha"], gf["suite_sha"])
 
     @unittest.skipUnless(has_pytest(), "pytest no instalado")
-    def test_injection_readme_is_inert(self):
+    def test_injection_readme_inert(self):
         tmp = tempfile.mkdtemp(prefix="forge-inj-")
         self.addCleanup(shutil.rmtree, tmp, True)
-        shutil.copy2(os.path.join(FIX, "candidate_fixed", "stats.py"), tmp)
+        shutil.copy2(os.path.join(GOLD, "stats.py"), tmp)
         shutil.copy2(os.path.join(FORGE_ROOT, "fixtures", "injection-test",
                                   "README_EVIL.md"), tmp)
-        g = arena_forge.run_gates(tmp, SUITE)
-        self.assertEqual(g["verdict"], "PASS")
+        self.assertEqual(gate_engine.run_gate(tmp, SUITE)["state"], "PASS")
+
+    @unittest.skipUnless(has_pytest(), "pytest no instalado")
+    def test_harness_tampering_blocked(self):
+        tmp = tempfile.mkdtemp(prefix="forge-tamper-")
+        self.addCleanup(shutil.rmtree, tmp, True)
+        shutil.copy2(os.path.join(GOLD, "stats.py"), tmp)
+        with open(os.path.join(tmp, "tests_protected_evil.py"), "w") as fh:
+            fh.write("def test_x(): pass\n")
+        g = gate_engine.run_gate(tmp, SUITE)
+        self.assertEqual(g["state"], "BLOCKED")
+        self.assertEqual(g["failure_class"], "harness_tampering")
+
+    def test_not_run_when_suite_missing(self):
+        g = gate_engine.run_gate(GOLD, os.path.join(FIX, "nope.py"))
+        self.assertEqual(g["state"], "NOT_RUN")
+        self.assertEqual(g["failure_class"], "environment_broken")
 
 
+# -------------------------------------------------- §16.7 score/gates
+class ScoreTest(unittest.TestCase):
+    def test_dimension_total(self):
+        full = {k: 10 for k in score_mod.PATCH_WEIGHTS}
+        self.assertEqual(score_mod.dimension_score(full), 100.0)
+        with self.assertRaises(ForgeError):
+            score_mod.dimension_score({"correctness": 11})
+        with self.assertRaises(ForgeError):
+            score_mod.dimension_score({"correctness": 5})
+
+    def test_evidence_required(self):
+        with self.assertRaises(ForgeError):
+            score_mod.require_evidence({"winner": "X"})
+
+    def test_gate_binds_judge(self):
+        v = {"winner": "Y", "evidence": ["x.py:1"]}
+        cand, info = score_mod.evaluate_patch_judgement(
+            v, ["cand-a"], {"X": "cand-a", "Y": "cand-b"})
+        self.assertIsNone(cand)          # Y no elegible
+        v2 = {"winner": "X", "evidence": ["x.py:1"]}
+        cand2, _ = score_mod.evaluate_patch_judgement(
+            v2, ["cand-a"], {"X": "cand-a", "Y": "cand-b"})
+        self.assertEqual(cand2, "cand-a")
+
+
+# ------------------------------------------------------ §16.14/§16.15 E
+class AgentETest(unittest.TestCase):
+    def _run(self, d, **over):
+        run = {"run_id": "r1", "mode": "patch", "phase": "EVALUATING",
+               "budget": agent_e.budget_for("standard"), "calls_spent": 0,
+               "schema_version": 2}
+        run.update(over)
+        return run
+
+    def test_decision_validates_and_persists(self):
+        d = tempfile.mkdtemp(prefix="forge-e-")
+        self.addCleanup(shutil.rmtree, d, True)
+        run = self._run(d)
+        dec = agent_e.step(d, run)
+        self.assertEqual(agent_e.validate_decision(dec), [])
+        self.assertTrue(os.path.isfile(os.path.join(d, agent_e.DECISIONS_FILE)))
+        self.assertEqual(len(agent_e.history(d)), 1)
+
+    def test_no_ship_when_no_eligible(self):
+        d = tempfile.mkdtemp(prefix="forge-e2-")
+        self.addCleanup(shutil.rmtree, d, True)
+        with open(os.path.join(d, "gates.json"), "w") as fh:
+            json.dump({"cand-a": {"state": "FAIL"}}, fh)
+        dec = agent_e.propose(d, self._run(d))
+        self.assertEqual(dec["action_type"], "recommend_no_ship")
+
+    def test_budget_over_rejected(self):
+        d = tempfile.mkdtemp(prefix="forge-e3-")
+        self.addCleanup(shutil.rmtree, d, True)
+        with open(os.path.join(d, "gates.json"), "w") as fh:
+            json.dump({"cand-a": {"state": "PASS"}}, fh)
+        run = self._run(d, calls_spent=999)
+        dec = agent_e.propose(d, run)
+        self.assertEqual(dec["action_type"], "stop")
+
+    def test_illegal_decision_rejected(self):
+        d = tempfile.mkdtemp(prefix="forge-e4-")
+        self.addCleanup(shutil.rmtree, d, True)
+        bad = {"decision_id": "x", "run_id": "r", "observed_state_version": 1,
+               "action_type": "nuke", "target_ids": [], "reason": "r",
+               "evidence_refs": [], "cost_estimate": {}, "budget_remaining": {},
+               "risk_level": "low", "preconditions": [], "stop_conditions": [],
+               "timestamp": 1, "policy_version": "p",
+               "requires_human_approval": False, "execution_state": "proposed"}
+        self.assertTrue(agent_e.validate_decision(bad))
+        with self.assertRaises(ForgeError):
+            agent_e.persist(d, bad)
+
+
+# ------------------------------------------------- §16.10/§15 informe
 class ReportTest(TempCwd):
     def _min_run(self, mode, status, gates=None):
         os.makedirs("run1", exist_ok=True)
@@ -124,9 +312,11 @@ class ReportTest(TempCwd):
                  "reason": "<script>alert(1)</script>"}]}]}
         with open("run1/arena.json", "w", encoding="utf-8") as fh:
             json.dump(arena, fh)
-        forge = {"version": 1, "mode": mode, "status": status, "dir": "run1",
-                 "seed": 7, "agents": 2, "task_sha": "t", "rubric_sha": "r",
-                 "cards_sha": "c", "baseline_commit": "n/a", "events": []}
+        forge = {"version": 2, "schema_version": 2, "run_id": "run1", "mode": mode,
+                 "status": status, "phase": status, "dir": "run1", "seed": 7,
+                 "agents": 2, "task_sha": "t" * 64, "rubric_sha": "r" * 64,
+                 "cards_sha": "c" * 64, "baseline_commit": "n/a",
+                 "policy_version": "e-policy-v1", "budget": {}, "events": []}
         with open("run1/forge.json", "w", encoding="utf-8") as fh:
             json.dump(forge, fh)
         if gates is not None:
@@ -134,54 +324,114 @@ class ReportTest(TempCwd):
                 json.dump(gates, fh)
         return os.path.abspath("run1")
 
-    def test_escape_and_winner(self):
+    def test_html_escapes_script(self):
         d = self._min_run("answer", "RUNNING")
-        arena_forge.cmd_report(argparse_ns(dir=d))
+        out = report_mod.write(d, os.path.join(FORGE_ROOT, "reports"))
         base = os.path.basename(d)
-        html_p = os.path.join(FORGE_ROOT, "reports", base + ".html")
         self.addCleanup(lambda: [os.path.exists(p) and os.remove(p)
-                                 for p in (html_p, html_p[:-5] + ".md")])
-        body = open(html_p, encoding="utf-8").read()
+                                 for p in (out["html"], out["md"])])
+        body = open(out["html"], encoding="utf-8").read()
         self.assertIn("&lt;script&gt;", body)
         self.assertNotIn("<script>alert", body)
 
-    def test_no_ship_when_champion_fails_gates(self):
-        d = self._min_run("patch", "RUNNING",
-                          {"a001": {"verdict": "FAIL", "seconds": 1.0}})
-        import io
-        from contextlib import redirect_stdout
-        buf = io.StringIO()
-        with redirect_stdout(buf):
-            arena_forge.cmd_report(argparse_ns(dir=d))
-        self.assertIn("NO_SHIP", buf.getvalue())
-        base = os.path.basename(d)
-        for p in (os.path.join(FORGE_ROOT, "reports", base + ".md"),
-                  os.path.join(FORGE_ROOT, "reports", base + ".html")):
+    def test_no_ship_when_gate_fails(self):
+        d = self._min_run("patch", "EVALUATING",
+                          {"a001": {"state": "FAIL", "exit_code": 1}})
+        dec, reason, eligible = report_mod.resolve(d)
+        self.assertEqual(dec, "NO_SHIP")
+        self.assertEqual(eligible, [])
+        out = report_mod.write(d, os.path.join(FORGE_ROOT, "reports"))
+        for p in (out["html"], out["md"]):
             if os.path.exists(p):
                 os.remove(p)
 
 
-class PatchWinnerTest(TempCwd):
-    def test_gates_bind_judge(self):
-        os.makedirs("run1", exist_ok=True)
-        d = os.path.abspath("run1")
-        forge = {"mode": "patch"}
-        gates = {"cand-a": {"verdict": "PASS"}, "cand-b": {"verdict": "FAIL"}}
-        with open("run1/patch_judge.json", "w", encoding="utf-8") as fh:
-            json.dump({"winner": "Y", "reason": "x"}, fh)
-        with open("run1/patch_map.json", "w", encoding="utf-8") as fh:
-            json.dump({"X": "cand-a", "Y": "cand-b"}, fh)
-        # Y es inelegible (FAIL): NO_SHIP aunque el juez lo elija
-        cand, _ = arena_forge.resolve_patch_winner(d, forge, gates)
-        self.assertIsNone(cand)
-        with open("run1/patch_judge.json", "w", encoding="utf-8") as fh:
-            json.dump({"winner": "X", "reason": "x"}, fh)
-        cand, _ = arena_forge.resolve_patch_winner(d, forge, gates)
-        self.assertEqual(cand, "cand-a")
+# ----------------------------------------------- §16.11 presupuesto/perfiles
+class BudgetTest(TempCwd):
+    def test_extreme_requires_confirm(self):
+        base = dict(mode="answer", agents=4, quick=False, seed=7, task="x",
+                    task_file=None, baseline_file=None, suite=None, wave=10,
+                    dir=None, scope=None, non_goals=None, baseline_dir=None)
+        with self.assertRaises(ForgeError):
+            arena_forge.cmd_init(ns(profile="extreme", confirm=False, **base))
+
+    def test_profile_limits(self):
+        q = agent_e.budget_for("quick")
+        e = agent_e.budget_for("extreme")
+        self.assertLess(q["max_calls"], e["max_calls"])
 
 
-def argparse_ns(**kw):
-    return type("NS", (), kw)()
+# ------------------------------------ §16.5/§16.17 reanudacion y cancelacion
+class ResumeCancelTest(TempCwd):
+    def test_resume_keeps_completed(self):
+        base = dict(mode="answer", agents=2, quick=False, seed=7, task="t",
+                    task_file=None, baseline_file=None, suite=None, wave=10,
+                    dir=None, scope=None, non_goals=None, baseline_dir=None,
+                    profile="standard", confirm=False)
+        arena_forge.cmd_init(ns(**base))
+        d = arena_forge.run_dir_from(ns(dir=None))
+        before = open(os.path.join(d, "arena.json"), encoding="utf-8").read()
+        arena_forge.cmd_resume(ns(dir=d))
+        after = open(os.path.join(d, "arena.json"), encoding="utf-8").read()
+        self.assertEqual(before, after)          # nada duplicado ni reescrito
+        kinds = [e["kind"] for e in ledger.read(d)]
+        self.assertIn("resume", kinds)
+
+    def test_cancel_keeps_artifacts(self):
+        base = dict(mode="answer", agents=2, quick=False, seed=7, task="t",
+                    task_file=None, baseline_file=None, suite=None, wave=10,
+                    dir=None, scope=None, non_goals=None, baseline_dir=None,
+                    profile="standard", confirm=False)
+        arena_forge.cmd_init(ns(**base))
+        d = arena_forge.run_dir_from(ns(dir=None))
+        arena_forge.cmd_cancel(ns(dir=d, reason="stop"))
+        self.assertEqual(arena_forge.load_forge(d)["phase"], "CANCELLED")
+        self.assertTrue(os.path.isfile(os.path.join(d, "arena.json")))
+        with self.assertRaises(ForgeError):
+            arena_forge.cmd_passthrough("collect", ns(dir=d))
+
+
+# ------------------------------------------------- §16.16 cambios preexistentes
+class PreexistingChangesTest(TempCwd):
+    def test_user_work_untouched(self):
+        with open("user_work.txt", "w", encoding="utf-8") as fh:
+            fh.write("preciosa produccion del usuario\n")
+        before = open("user_work.txt", encoding="utf-8").read()
+        base = dict(mode="answer", agents=2, quick=False, seed=7, task="t",
+                    task_file=None, baseline_file=None, suite=None, wave=10,
+                    dir=None, scope=None, non_goals=None, baseline_dir=None,
+                    profile="standard", confirm=False)
+        arena_forge.cmd_init(ns(**base))
+        d = arena_forge.run_dir_from(ns(dir=None))
+        arena_forge.cmd_verify(ns(dir=d))
+        self.assertEqual(open("user_work.txt", encoding="utf-8").read(), before)
+
+
+# ------------------------------------------------------------ §13 adapter
+class AdapterTest(unittest.TestCase):
+    def test_probe_marks_unknown_not_verified(self):
+        caps = adapter.probe()
+        self.assertNotEqual(caps["plugin_api"]["status"], adapter.VERIFIED)
+        self.assertNotEqual(caps["subagent_background"]["status"], adapter.VERIFIED)
+        with self.assertRaises(ForgeError):
+            adapter.require(caps, "plugin_api")
+
+    def test_summary_counts(self):
+        caps = adapter.probe()
+        counts = adapter.summary(caps)
+        self.assertGreaterEqual(counts.get(adapter.VERIFIED, 0), 5)
+
+
+# ------------------------------------------------- §16.12/§16.21 benchmark
+class BenchmarkTest(unittest.TestCase):
+    @unittest.skipUnless(has_pytest(), "pytest no instalado")
+    def test_deterministic_ok_and_declared_gaps(self):
+        res = bench_mod.run(sizes=(4,), seed=7)
+        self.assertTrue(res["deterministic_ok"])
+        self.assertTrue(any("E" in n or "aqui" in n or "calidad" in n
+                            for n in res["not_measured"]))
+        md = bench_mod.to_markdown(res)
+        self.assertIn("NO medido", md)
 
 
 if __name__ == "__main__":

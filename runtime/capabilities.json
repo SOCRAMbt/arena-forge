@@ -1,0 +1,68 @@
+{
+ "version": "opencode v2.0.32",
+ "platform": "Windows-11-10.0.26200-SP0",
+ "python": "3.12.4",
+ "probed": 1792350731,
+ "capabilities": {
+  "shell_tool": {
+   "status": "verified",
+   "evidence": "el orquestador ejecuta comandos via tool shell",
+   "by": "uso"
+  },
+  "python_runtime": {
+   "status": "verified",
+   "evidence": "3.12.4",
+   "by": "plataforma"
+  },
+  "skills_native": {
+   "status": "verified",
+   "evidence": "skills resueltas por ID en ~/.config/opencode/skills y <proyecto>/.opencode/skills (comprobado en E2E)",
+   "by": "E2E"
+  },
+  "subagent_tool": {
+   "status": "verified",
+   "evidence": "tool subagent(agent, description, prompt) usado en E2E real",
+   "by": "E2E"
+  },
+  "subagent_foreground": {
+   "status": "verified",
+   "evidence": "las olas returnan juntas en foreground",
+   "by": "E2E"
+  },
+  "subagent_background": {
+   "status": "unknown",
+   "evidence": "no se comprobo supervivencia de background al cerrar terminal; no se usa como camino principal",
+   "by": "none"
+  },
+  "agent_profiles": {
+   "status": "verified",
+   "evidence": "perfiles .md en .opencode/agents/ y ~/.config/opencode/agents/",
+   "by": "docs"
+  },
+  "permission_rules": {
+   "status": "verified",
+   "evidence": "reglas {action, resource, effect} con allow/ask/deny (V2)",
+   "by": "docs"
+  },
+  "readonly_agent": {
+   "status": "verified",
+   "evidence": "agente builtin explore es read-only (docs V2)",
+   "by": "docs"
+  },
+  "cwd_control": {
+   "status": "verified",
+   "evidence": "subprocess con cwd explicito (gates en scratch)",
+   "by": "E2E"
+  },
+  "state_on_disk": {
+   "status": "verified",
+   "evidence": "resume reconstruye desde .arena/<run>/ sin duplicar",
+   "by": "E2E"
+  },
+  "plugin_api": {
+   "status": "unknown",
+   "evidence": "no se comprobo la API de plugin en esta instalacion; no se depende de ella",
+   "by": "none"
+  }
+ }
+}

@@ -1,0 +1,116 @@
+{
+ "ts": 1792350731,
+ "seed": 7,
+ "tasks": [
+  {
+   "task": "small-stats",
+   "size": "small",
+   "suite_sha": "df65bfebf760aae0e5a082e5a5aa3022ac5adec4a01d062b9460f7b1302d09f4",
+   "gold_state": "PASS",
+   "buggy_state": "FAIL",
+   "gold_exit": 0,
+   "buggy_exit": 1
+  }
+ ],
+ "methods": {
+  "single_agent": {
+   "calls": {
+    "small": 1
+   }
+  },
+  "fixed_orchestration": {
+   "calls": {
+    "small": 20
+   }
+  },
+  "arena_e_adaptive": {
+   "calls": {
+    "small": 63
+   }
+  }
+ },
+ "not_measured": [
+  "calidad textual/LLM de soluciones (requiere ejecuciones vivas repetidas)",
+  "coste monetario (el proveedor no expone tokens por API)",
+  "eficacia adaptativa de E vs orquestacion fija vs agente unico (hipotesis pendiente, no demostrada aqui)"
+ ],
+ "declaration": "Medido: scheduler, gates, aceptacion determinista, llamadas por metodo. NO medido: calidad LLM y valor de E (declarado, no fabricado).",
+ "scheduler": [
+  {
+   "n": 2,
+   "distinct_cards": true,
+   "bracket": [
+    2,
+    1
+   ],
+   "single_winner": true
+  },
+  {
+   "n": 3,
+   "distinct_cards": true,
+   "bracket": [
+    3,
+    2,
+    1
+   ],
+   "single_winner": true
+  },
+  {
+   "n": 4,
+   "distinct_cards": true,
+   "bracket": [
+    4,
+    2,
+    1
+   ],
+   "single_winner": true
+  },
+  {
+   "n": 5,
+   "distinct_cards": true,
+   "bracket": [
+    5,
+    3,
+    2,
+    1
+   ],
+   "single_winner": true
+  },
+  {
+   "n": 7,
+   "distinct_cards": true,
+   "bracket": [
+    7,
+    4,
+    2,
+    1
+   ],
+   "single_winner": true
+  },
+  {
+   "n": 8,
+   "distinct_cards": true,
+   "bracket": [
+    8,
+    4,
+    2,
+    1
+   ],
+   "single_winner": true
+  },
+  {
+   "n": 16,
+   "distinct_cards": true,
+   "bracket": [
+    16,
+    8,
+    4,
+    2,
+    1
+   ],
+   "single_winner": true
+  }
+ ],
+ "deterministic_ok": true,
+ "seconds": 5.6
+}
