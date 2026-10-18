@@ -115,6 +115,25 @@ def diff_sha(diff_text):
     return sha_text(diff_text)
 
 
+def candidate_manifest_sha(candidate_dir):
+    """Calcula un hash determinista del árbol completo del candidato.
+    
+    Incluye: rutas relativas normalizadas, tipo, tamaño, SHA-256.
+    """
+    files = dict(_walk_files(candidate_dir))
+    if not files:
+        return sha_text("")
+    parts = []
+    for rel, abspath in sorted(files.items()):
+        try:
+            st = os.stat(abspath)
+            file_sha = sha_file(abspath)
+            parts.append("%s|%s|%d|%s" % (rel, "file", st.st_size, file_sha))
+        except OSError:
+            parts.append("%s|%s|%d|%s" % (rel, "file", 0, "error"))
+    return sha_text("\n".join(parts))
+
+
 def validate_diff(diff_text):
     """Rechaza diffs que intenten rutas fuera del arbol de trabajo."""
     problems = []

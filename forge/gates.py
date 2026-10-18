@@ -16,6 +16,8 @@ import tempfile
 
 from .util import (DEFAULT_CMD_TIMEOUT, ForgeError, now_ts, redact, sha_file,
                    inside)
+from . import isolation
+from .isolation import candidate_manifest_sha
 
 
 def _protected_names(candidate_dir):
@@ -71,6 +73,14 @@ def run_gate(candidate_dir, protected_suite, gate_id=None, timeout_s=DEFAULT_CMD
     ts = now_ts()
     gate_id = gate_id or ("suite:" + os.path.basename(candidate_dir.rstrip("/\\")))
     candidate_dir = os.path.realpath(candidate_dir)
+    # P0-05: calcular manifest hash del candidato antes de ejecutar
+    candidate_manifest = candidate_manifest_sha(candidate_dir)
+    diff_text = isolation.capture_diff(
+        os.path.join(os.path.dirname(candidate_dir), "..", "baseline"),
+        candidate_dir
+    ) if os.path.isdir(os.path.join(os.path.dirname(candidate_dir), "..", "baseline")) else ""
+    diff_hash = isolation.diff_sha(diff_text) if diff_text else None
+    
     result = {
         "gate_id": gate_id,
         "candidate": os.path.basename(candidate_dir),
@@ -85,6 +95,8 @@ def run_gate(candidate_dir, protected_suite, gate_id=None, timeout_s=DEFAULT_CMD
         "failure_class": None,
         "notes": "",
         "suite_sha": None,
+        "candidate_manifest_sha": candidate_manifest,
+        "diff_sha": diff_hash,
     }
 
     if not os.path.isdir(candidate_dir):

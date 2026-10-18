@@ -51,7 +51,8 @@ def gather(run_dir):
 def resolve(run_dir, data=None):
     """Decision explicita con razon. Gates mandan sobre cualquier score.
     
-    P0-01/P0-03: Requiere aislamiento verificado y suite hash intacto para WINNER.
+    P0-01/P0-03/P0-06: Requiere aislamiento verificado, suite hash intacto,
+    y evaluaciones COMPLETAS para todos los candidatos para WINNER.
     """
     data = data or gather(run_dir)
     run = data["run"]
@@ -76,12 +77,55 @@ def resolve(run_dir, data=None):
                 return "NO_SHIP", ("suite hash mismatch para %s: gate=%s run=%s" %
                                   (cid, g_sha, expected_suite_sha)), []
         
+        # P0-06: requerir evaluaciones COMPLETAS para todos los candidatos
+        # Obtener lista de candidatos esperados desde el run
+        expected_candidates = list(run.get("candidates", {}).keys())
+        if not expected_candidates:
+            return "NO_SHIP", "sin candidatos en el run", []
+        
+        # Verificar que TODOS los candidatos esperados tienen GateResult
+        missing = [c for c in expected_candidates if c not in gates]
+        if missing:
+            return "NO_SHIP", ("faltan GateResult para candidatos: %s" % ", ".join(missing)), []
+        
+        # Verificar que cada resultado es conclusivo (no NOT_RUN, BLOCKED, INCONCLUSIVE)
+        # y que suite hash e aislamiento son válidos
+        for cid in expected_candidates:
+            g = gates.get(cid, {})
+            state = g.get("state")
+            if state in ("NOT_RUN", "BLOCKED", "INCONCLUSIVE", None):
+                return "NO_SHIP", ("candidato %s tiene resultado inconcluso: %s" %
+                                  (cid, state)), []
+            g_sha = g.get("suite_sha")
+            if expected_suite_sha and g_sha != expected_suite_sha:
+                return "NO_SHIP", ("suite hash mismatch para %s: gate=%s run=%s" %
+                                  (cid, g_sha, expected_suite_sha)), []
+            # aislamiento ya validado arriba para todos
+        
+        # Ahora sí: evaluar elegibilidad solo si todos están completos
         eligible = sorted(c for c, g in gates.items() if g.get("state") == "PASS")
         if not gates:
             return "NO_SHIP", "sin GateResult: la evaluacion no es confiable", eligible
         if not eligible:
             return ("NO_SHIP", "ningun candidato supera los gates obligatorios",
                     eligible)
+        
+        # P0-05: validar que el manifest del candidato no ha cambiado desde el gate
+        # Recalcular manifest actual y comparar con el guardado en el gate
+        for cid in eligible:
+            g = gates.get(cid, {})
+            saved_manifest = g.get("candidate_manifest_sha")
+            if saved_manifest:
+                # Recalcular manifest actual del candidato
+                import os
+                cdir = os.path.join(run_dir, "candidates", cid)
+                if os.path.isdir(cdir):
+                    from .isolation import candidate_manifest_sha
+                    current_manifest = candidate_manifest_sha(cdir)
+                    if current_manifest != saved_manifest:
+                        return "NO_SHIP", ("candidato %s modificado tras gate: manifest=%s gate=%s" %
+                                          (cid, current_manifest, saved_manifest)), []
+        
         # §6 nivel 2: el juez ciego solo compara candidatos elegibles. Si hay
         # un unico elegible, la eleccion por gates es determinista y no
         # requiere (ni puede fabricar) un veredicto de comparacion.

@@ -258,14 +258,55 @@ def cmd_init(args):
         if not gate_engine.suite_files(args.suite):
             raise ForgeError("suite inexistente (sin test_*.py): %s" % args.suite)
         suite_sha = gate_engine.suite_sha(args.suite)
-    baseline_commit = "n/a-no-repo"
+    
+    # P0-04: Baseline correcto - separar forge_repo_commit y target_baseline_commit
+    # Commit del repo donde vive Arena Forge (para auditoría)
+    forge_repo_commit = "n/a-no-repo"
     try:
         c = subprocess.run(["git", "rev-parse", "HEAD"], text=True,
                            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         if c.returncode == 0:
-            baseline_commit = c.stdout.strip()
+            forge_repo_commit = c.stdout.strip()
     except OSError:
         pass
+    
+    # Baseline del repo objetivo evaluado
+    baseline_dir = getattr(args, "baseline_dir", None)
+    target_baseline_commit = "n/a-no-repo"
+    baseline_dirty = False
+    baseline_manifest = None
+    
+    if baseline_dir:
+        baseline_dir = os.path.abspath(baseline_dir)
+        # Verificar si es un repo Git
+        try:
+            c = subprocess.run(["git", "-C", baseline_dir, "rev-parse", "HEAD"], 
+                              text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+            if c.returncode == 0:
+                target_baseline_commit = c.stdout.strip()
+                # Verificar dirty state
+                c2 = subprocess.run(["git", "-C", baseline_dir, "status", "--porcelain"],
+                                   text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                if c2.returncode == 0 and c2.stdout.strip():
+                    baseline_dirty = True
+            else:
+                # No es repo Git o no hay commits - calcular manifiesto de contenido
+                from .isolation import _walk_files
+                files = dict(_walk_files(baseline_dir))
+                parts = []
+                for rel, abspath in sorted(files.items()):
+                    try:
+                        st = os.stat(abspath)
+                        file_sha = sha_file(abspath)
+                        parts.append("%s|%s|%d|%s" % (rel, "file", st.st_size, file_sha))
+                    except OSError:
+                        parts.append("%s|%s|%d|%s" % (rel, "file", 0, "error"))
+                baseline_manifest = sha_text("\n".join(parts)) if parts else None
+        except OSError:
+            pass
+    
+    # Para compatibilidad, baseline_commit apunta al target si existe, sino forge
+    baseline_commit = target_baseline_commit if target_baseline_commit != "n/a-no-repo" else forge_repo_commit
 
     run = {
         "version": FORGE_VERSION, "schema_version": FORGE_VERSION,
@@ -275,8 +316,13 @@ def cmd_init(args):
         "rubric_sha": sha_file(os.path.join(d, "rubric.md")),
         "cards_sha": sha_file(STRATEGIES),
         "suite": os.path.abspath(args.suite) if args.suite else None,
-        "suite_sha": suite_sha, "baseline_commit": baseline_commit,
+        "suite_sha": suite_sha, 
+        "baseline_commit": baseline_commit,
         "baseline_ref": baseline_commit,
+        "forge_repo_commit": forge_repo_commit,
+        "target_baseline_commit": target_baseline_commit,
+        "baseline_dirty": baseline_dirty,
+        "baseline_manifest": baseline_manifest,
         "scope": getattr(args, "scope", None) or "no declarado",
         "non_goals": getattr(args, "non_goals", None) or "no declarados",
         "policy_version": POLICY_VERSION, "budget": agent_e.budget_for(profile),
@@ -577,17 +623,18 @@ def cmd_apply(args):
     if not args.approve:
         raise ForgeError("rehusado: exige --approve explicito y aplica a mano. "
                          "Nada del proyecto fue modificado.")
-    # verificar baseline sin cambios (\u00a76.8)
-    if run.get("baseline_commit") not in (None, "n/a-no-repo"):
-        try:
-            cur = subprocess.run(["git", "rev-parse", "HEAD"], text=True,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.DEVNULL).stdout.strip()
-            if cur and cur != run["baseline_commit"]:
-                raise ForgeError("baseline cambio (%s != %s); revisa antes de aplicar"
-                                 % (cur, run["baseline_commit"]))
-        except OSError:
-            pass
+    # P0-04: verificar baseline objetivo sin cambios
+        target_baseline = run.get("target_baseline_commit")
+        if target_baseline and target_baseline != "n/a-no-repo":
+            try:
+                cur = subprocess.run(["git", "rev-parse", "HEAD"], text=True,
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.DEVNULL).stdout.strip()
+                if cur and cur != target_baseline:
+                    raise ForgeError("baseline objetivo cambio (%s != %s); revisa antes de aplicar"
+                                     % (cur, target_baseline))
+            except OSError:
+                pass
     # P1-03: usar el mismo motor de decision que report (report_mod.resolve)
     data = report_mod.gather(d)
     data["candidates"] = run.get("candidates", {})
