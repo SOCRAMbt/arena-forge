@@ -317,12 +317,22 @@ class ReportTest(TempCwd):
                  "agents": 2, "task_sha": "t" * 64, "rubric_sha": "r" * 64,
                  "cards_sha": "c" * 64, "baseline_commit": "n/a",
                  "policy_version": "e-policy-v1", "budget": {}, "events": [],
-                 "candidates": {"a001": {}, "a002": {}}}
+                 "candidates": {"a001": {}, "a002": {}},
+                 "suite_sha": "a" * 64}
         with open("run1/forge.json", "w", encoding="utf-8") as fh:
             json.dump(forge, fh)
         if gates is not None:
+            # Agregar candidate_manifest_sha y diff_sha a cada gate
+            gates_with_hashes = {}
+            for cid, g in (gates or {}).items():
+                g2 = dict(g)
+                if "candidate_manifest_sha" not in g2:
+                    g2["candidate_manifest_sha"] = "test_manifest_" + cid
+                if "diff_sha" not in g2:
+                    g2["diff_sha"] = "test_diff_" + cid
+                gates_with_hashes[cid] = g2
             with open("run1/gates.json", "w", encoding="utf-8") as fh:
-                json.dump(gates, fh)
+                json.dump(gates_with_hashes, fh)
         # Para Patch mode, crear isolation.json válido por defecto
         if mode == "patch":
             isolation = {"root": "candidates", "candidates": {
@@ -345,7 +355,8 @@ class ReportTest(TempCwd):
 
     def test_no_ship_when_gate_fails(self):
         d = self._min_run("patch", "EVALUATING",
-                          {"a001": {"state": "FAIL", "exit_code": 1}})
+                          {"a001": {"state": "FAIL", "exit_code": 1, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a001", "diff_sha": "diff_a001"}})
         dec, reason, eligible = report_mod.resolve(d)
         self.assertEqual(dec, "NO_SHIP")
         self.assertEqual(eligible, [])
@@ -358,7 +369,8 @@ class ReportTest(TempCwd):
     def test_no_ship_when_candidate_missing_gate_result(self):
         """Si falta GateResult para un candidato esperado, no WINNER."""
         d = self._min_run("patch", "EVALUATING",
-                          {"a001": {"state": "PASS", "exit_code": 0}})
+                          {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a001", "diff_sha": "diff_a001"}})
         # forge.json tiene 2 candidatos (a001, a002) pero gates solo tiene a001
         with open(os.path.join(d, "forge.json"), encoding="utf-8") as fh:
             forge = json.load(fh)
@@ -367,13 +379,15 @@ class ReportTest(TempCwd):
             json.dump(forge, fh)
         dec, reason, eligible = report_mod.resolve(d)
         self.assertEqual(dec, "NO_SHIP")
-        self.assertIn("faltan GateResult", reason)
+        self.assertIn("sin GateResult", reason)
 
     def test_no_ship_when_candidate_gate_not_run(self):
         """Si un candidato tiene NOT_RUN, no WINNER."""
         d = self._min_run("patch", "EVALUATING",
-                          {"a001": {"state": "PASS", "exit_code": 0},
-                           "a002": {"state": "NOT_RUN", "exit_code": None}})
+                          {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a001", "diff_sha": "diff_a001"},
+                           "a002": {"state": "NOT_RUN", "exit_code": None, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a002", "diff_sha": "diff_a002"}})
         dec, reason, eligible = report_mod.resolve(d)
         self.assertEqual(dec, "NO_SHIP")
         self.assertIn("inconcluso", reason)
@@ -381,8 +395,10 @@ class ReportTest(TempCwd):
     def test_no_ship_when_candidate_gate_blocked(self):
         """Si un candidato tiene BLOCKED, no WINNER."""
         d = self._min_run("patch", "EVALUATING",
-                          {"a001": {"state": "PASS", "exit_code": 0},
-                           "a002": {"state": "BLOCKED", "exit_code": None}})
+                          {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a001", "diff_sha": "diff_a001"},
+                           "a002": {"state": "BLOCKED", "exit_code": None, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a002", "diff_sha": "diff_a002"}})
         dec, reason, eligible = report_mod.resolve(d)
         self.assertEqual(dec, "NO_SHIP")
         self.assertIn("inconcluso", reason)
@@ -390,8 +406,10 @@ class ReportTest(TempCwd):
     def test_no_ship_when_candidate_gate_inconclusive(self):
         """Si un candidato tiene INCONCLUSIVE, no WINNER."""
         d = self._min_run("patch", "EVALUATING",
-                          {"a001": {"state": "PASS", "exit_code": 0},
-                           "a002": {"state": "INCONCLUSIVE", "exit_code": None}})
+                          {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a001", "diff_sha": "diff_a001"},
+                           "a002": {"state": "INCONCLUSIVE", "exit_code": None, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a002", "diff_sha": "diff_a002"}})
         dec, reason, eligible = report_mod.resolve(d)
         self.assertEqual(dec, "NO_SHIP")
         self.assertIn("inconcluso", reason)
@@ -399,12 +417,14 @@ class ReportTest(TempCwd):
     def test_no_ship_when_suite_hash_missing(self):
         """Si falta suite_sha en un resultado, no WINNER."""
         d = self._min_run("patch", "EVALUATING",
-                          {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "abc"},
-                           "a002": {"state": "PASS", "exit_code": 0}})  # sin suite_sha
-        # Configurar suite_sha esperado en el run
+                          {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a001", "diff_sha": "diff_a001"},
+                           "a002": {"state": "PASS", "exit_code": 0, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a002", "diff_sha": "diff_a002"}})
+        # Configurar suite_sha esperado en el run (diferente al de los gates)
         with open(os.path.join(d, "forge.json"), encoding="utf-8") as fh:
             forge = json.load(fh)
-        forge["suite_sha"] = "expected_sha"
+        forge["suite_sha"] = "b" * 64  # Diferente al de los gates
         with open(os.path.join(d, "forge.json"), "w", encoding="utf-8") as fh:
             json.dump(forge, fh)
         dec, reason, eligible = report_mod.resolve(d)
@@ -414,8 +434,10 @@ class ReportTest(TempCwd):
     def test_no_ship_when_isolation_invalid(self):
         """Si aislamiento inválido, no WINNER."""
         d = self._min_run("patch", "EVALUATING",
-                          {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "abc"},
-                           "a002": {"state": "PASS", "exit_code": 0, "suite_sha": "abc"}})
+                          {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a001", "diff_sha": "diff_a001"},
+                           "a002": {"state": "PASS", "exit_code": 0, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a002", "diff_sha": "diff_a002"}})
         # Invalidar isolation.json
         with open(os.path.join(d, "isolation.json"), "w", encoding="utf-8") as fh:
             json.dump({"ok": False, "problems": ["candidato fuera del run"]}, fh)
@@ -426,8 +448,10 @@ class ReportTest(TempCwd):
     def test_winner_when_all_evaluated_one_eligible(self):
         """Todos evaluados, mismo harness, exactamente uno PASS → WINNER."""
         d = self._min_run("patch", "EVALUATING",
-                          {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "abc"},
-                           "a002": {"state": "FAIL", "exit_code": 1, "suite_sha": "abc"}})
+                          {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a001", "diff_sha": "diff_a001"},
+                           "a002": {"state": "FAIL", "exit_code": 1, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest_a002", "diff_sha": "diff_a002"}})
         # Asegurar isolation.json válido
         with open(os.path.join(d, "isolation.json"), "w", encoding="utf-8") as fh:
             json.dump({"ok": True, "candidates": {"a001": {}, "a002": {}}}, fh)
@@ -450,9 +474,10 @@ class ReportTest(TempCwd):
     def test_no_ship_when_candidate_modified_after_gate(self):
         """Si el candidato cambia tras gate PASS, no WINNER."""
         d = self._min_run("patch", "EVALUATING",
-                          {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "abc",
-                                     "candidate_manifest_sha": "manifest1"},
-                           "a002": {"state": "FAIL", "exit_code": 1, "suite_sha": "abc"}})
+                          {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest1", "diff_sha": "diff1"},
+                           "a002": {"state": "FAIL", "exit_code": 1, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "manifest2", "diff_sha": "diff2"}})
         # Asegurar isolation.json válido
         with open(os.path.join(d, "isolation.json"), "w", encoding="utf-8") as fh:
             json.dump({"ok": True, "candidates": {"a001": {}, "a002": {}}}, fh)

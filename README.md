@@ -26,7 +26,7 @@ candidato y reanudación total.
 
 ```bat
 cd arena-forge
-python -m pytest tests/ -q          :: 9 passed, ~15 s
+python -m pytest tests/ -q          :: 44 passed, ~35 s
 python arena_forge.py plan --agents 4
 python arena_forge.py init --mode answer --agents 4 --seed 7 --task "..."
 python arena_forge.py next          :: manda la fase; prompts <fase> genera briefs
@@ -82,10 +82,11 @@ flowchart TD
 | Caso | Resultado |
 |---|---|
 | Answer E2E, 4 agentes, seed 7 | Campeón **a002** en 2 rondas (23 llamadas: 19 + 4 reintentos por outputs ausentes) |
-| Patch E2E, 2 candidatos aislados | Gates PASS/PASS → 2 ataques MINOR reales vs cand-b, defensa con concede+fix, re-gates PASS, juez ciego 90–84 → **cand-a** |
+| Patch E2E, 2 candidatos aislados | Gates PASS/FAIL → WINNER por gates deterministas, juez ciego no requerido (único elegible) |
 | NO_SHIP | Candidato buggy FAIL → sin campeón forzado |
 | Benchmark | Scheduler OK en n=2,3,4,5,7,8,16 · gates buggy=FAIL/fixed=PASS · suite íntegra |
-| Seguridad | README malicioso inerte · `<script>` escapado en informe · oversize en cuarentena |
+| Seguridad | README malicioso inerte · `<script>` escapado en informe · oversize en cuarentena · sitecustomize bloqueado |
+| Tests | 44/44 PASS (unit + integración + adversarial) |
 
 Informes: [`demo/answer-e2e.md`](demo/answer-e2e.md) ·
 [`demo/patch-e2e.md`](demo/patch-e2e.md) · [`demo/no-ship.md`](demo/no-ship.md)
@@ -98,7 +99,7 @@ vendor/arena-skill/     bracket.py, strategies.json (2160 cartas), rubric.md, SK
 .opencode/skills/       skill nativa arena-forge
 .opencode/agents/       scout / implementer / reviewer / judge (mínimo privilegio)
 fixtures/               patch-demo (bug + suite protegida) · injection-test
-tests/                  9 tests stdlib (scheduler, CLI, gates, escape, NO_SHIP…)
+tests/                  44 tests stdlib (scheduler, CLI, gates, escape, NO_SHIP, manifest, diff, baseline…)
 docs/                   RECONNAISSANCE · ARCHITECTURE · THREAT_MODEL · 5 ADRs
 demo/                   3 informes de ejecuciones reales
 ```

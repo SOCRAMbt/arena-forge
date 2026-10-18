@@ -79,7 +79,7 @@ def run_gate(candidate_dir, protected_suite, gate_id=None, timeout_s=DEFAULT_CMD
         os.path.join(os.path.dirname(candidate_dir), "..", "baseline"),
         candidate_dir
     ) if os.path.isdir(os.path.join(os.path.dirname(candidate_dir), "..", "baseline")) else ""
-    diff_hash = isolation.diff_sha(diff_text) if diff_text else None
+    diff_hash = isolation.diff_sha(diff_text)  # Siempre calcular hash, incluso para diff vacío
     
     result = {
         "gate_id": gate_id,
@@ -128,6 +128,15 @@ def run_gate(candidate_dir, protected_suite, gate_id=None, timeout_s=DEFAULT_CMD
         result["failure_class"] = "harness_tampering"
         result["notes"] = "contaminacion: candidato incluye %s" % ", ".join(bad)
         return result
+
+    # P0-D.2: Verificar que no hay sitecustomize.py ni configuración pytest en candidato
+    for name in os.listdir(candidate_dir):
+        low = name.lower()
+        if low in ("sitecustomize.py", "usercustomize.py", "pytest.ini", "pyproject.toml", "tox.ini", "setup.cfg"):
+            result["state"] = "BLOCKED"
+            result["failure_class"] = "harness_tampering"
+            result["notes"] = "candidato incluye archivo de configuracion prohibido: %s" % name
+            return result
 
     scratch = tempfile.mkdtemp(prefix="forge-gate-")
     try:

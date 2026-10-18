@@ -2,7 +2,7 @@
  "version": "opencode v2.0.32",
  "platform": "Windows-11-10.0.26200-SP0",
  "python": "3.12.4",
- "probed": 1792359551,
+ "probed": 1792365714,
  "capabilities": {
   "shell_tool": {
    "status": "verified",
@@ -16,17 +16,17 @@
   },
   "skills_native": {
    "status": "unsupported",
-   "evidence": "skill load fallo (rc=127): [WinError 2] El sistema no puede encontrar el archivo especificado",
+   "evidence": "skill load fallo (rc=1): DESCRIPTION\n  OpenCode command line interface\n\nUSAGE\n  opencode <subcommand> [flags] [<directory>]\n\nARGUMENTS\n  directory string    Directory to start OpenCode in (optional)\n\nFLAGS\n  --standalone     ",
    "by": "functional_test"
   },
   "subagent_tool": {
    "status": "unsupported",
-   "evidence": "subagent foreground fallo (rc=127): [WinError 2] El sistema no puede encontrar el archivo especificado",
+   "evidence": "subagent foreground fallo (rc=1): DESCRIPTION\n  Run OpenCode with a message\n\nUSAGE\n  opencode run [flags] [<message...>]\n\nARGUMENTS\n  message... string    Message to send (optional)\n\nFLAGS\n  --standalone            Run with a private ",
    "by": "functional_test"
   },
   "subagent_foreground": {
    "status": "unsupported",
-   "evidence": "subagent foreground fallo (rc=127): [WinError 2] El sistema no puede encontrar el archivo especificado",
+   "evidence": "subagent foreground fallo (rc=1): DESCRIPTION\n  Run OpenCode with a message\n\nUSAGE\n  opencode run [flags] [<message...>]\n\nARGUMENTS\n  message... string    Message to send (optional)\n\nFLAGS\n  --standalone            Run with a private ",
    "by": "functional_test"
   },
   "subagent_background": {
@@ -46,12 +46,12 @@
   },
   "readonly_agent": {
    "status": "verified",
-   "evidence": "explore denego edicion correctamente",
+   "evidence": "explore denego edicion correctamente (rc=1): DESCRIPTION\n  Run OpenCode with a message\n\nUSAGE\n  opencode run [flags] [<message...>]\n\nARGUMENTS\n  message... string    Message to send (optional)\n\nFLAGS\n  --standalone            Run with a private ",
    "by": "functional_test"
   },
   "cwd_control": {
    "status": "verified",
-   "evidence": "subprocess con cwd=C:\\Users\\Marcos\\AppData\\Local\\Temp\\opencode_cwd_test_9pm9y0aa funciono",
+   "evidence": "subprocess con cwd=C:\\Users\\Marcos\\AppData\\Local\\Temp\\opencode_cwd_test_05sabqmt funciono",
    "by": "functional_test"
   },
   "state_on_disk": {

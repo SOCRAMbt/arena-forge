@@ -3,7 +3,9 @@
 El historial vive en `ledger.jsonl`, una linea JSON por evento con `seq`
 monotono. Nunca se borran ni se reescriben eventos: corregir = anadir evento.
 `verify` comprueba que los seq son estrictamente crecientes y sin huecos.
+Hash-chain: cada evento incluye prev_hash y event_hash para detectar alteracion.
 """
+import hashlib
 import json
 import os
 
@@ -23,14 +25,22 @@ def next_seq(run_dir):
 
 def append(run_dir, kind, detail="", refs=None, actor="runtime"):
     """Anade un evento. Solo se anaden; jamas se elimina ni reordena."""
+    events = read(run_dir)
+    prev_hash = events[-1].get("event_hash") if events else "0" * 64
+    
     ev = {
-        "seq": next_seq(run_dir),
+        "seq": len(events) + 1,
         "ts": now_ts(),
         "kind": str(kind),
         "actor": str(actor),
         "detail": str(detail),
         "refs": refs or {},
+        "prev_hash": prev_hash,
     }
+    # Calcular hash del evento (sin event_hash)
+    ev_canonical = json.dumps(ev, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    ev["event_hash"] = hashlib.sha256(ev_canonical.encode("utf-8")).hexdigest()
+    
     append_line(_path(run_dir), json.dumps(ev, ensure_ascii=False))
     return ev
 
@@ -56,10 +66,11 @@ def read(run_dir, max_bytes=None):
 
 
 def verify(run_dir):
-    """Devuelve (ok, problemas). seq estrictamente creciente y sin huecos."""
+    """Devuelve (ok, problemas). Verifica seq, hash-chain y referencias."""
     events = read(run_dir)
     problems = []
-    last = 0
+    last_seq = 0
+    expected_prev = "0" * 64
     for ev in events:
         seq = ev.get("seq")
         if seq == -1:
@@ -68,9 +79,28 @@ def verify(run_dir):
         if not isinstance(seq, int):
             problems.append("evento sin seq entero")
             continue
-        if seq != last + 1:
-            problems.append("seq no contiguo: %s tras %s" % (seq, last))
-        last = seq
+        if seq != last_seq + 1:
+            problems.append("seq no contiguo: %s tras %s" % (seq, last_seq))
+        
+        # Verificar hash-chain
+        prev_hash = ev.get("prev_hash")
+        if prev_hash != expected_prev:
+            problems.append("prev_hash no coincide: esperado=%s actual=%s" % (expected_prev, prev_hash))
+        
+        event_hash = ev.get("event_hash")
+        if event_hash:
+            # Recalcular hash del evento (sin event_hash)
+            ev_copy = {k: v for k, v in ev.items() if k != "event_hash"}
+            ev_canonical = json.dumps(ev_copy, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            computed_hash = hashlib.sha256(ev_canonical.encode("utf-8")).hexdigest()
+            if computed_hash != event_hash:
+                problems.append("event_hash invalido para seq=%s" % seq)
+            expected_prev = event_hash
+        else:
+            problems.append("event_hash ausente en seq=%s" % seq)
+        
+        last_seq = seq
+    
     return (not problems), problems
 
 

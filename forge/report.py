@@ -71,18 +71,38 @@ def resolve(run_dir, data=None):
         
         # P0-03: validar integridad de suite contra hash congelado
         expected_suite_sha = run.get("suite_sha")
-        for cid, g in gates.items():
+        if not expected_suite_sha:
+            return "NO_SHIP", "suite_sha congelado ausente en run", []
+        # Validar formato SHA256 (64 chars hex)
+        if not isinstance(expected_suite_sha, str) or len(expected_suite_sha) != 64 or not all(c in "0123456789abcdef" for c in expected_suite_sha):
+            return "NO_SHIP", "suite_sha congelado malformado: %s" % expected_suite_sha, []
+        
+        # P0-A.1: IDs de gates deben coincidir EXACTAMENTE con candidatos registrados
+        expected_candidates = list(run.get("candidates", {}).keys())
+        if not expected_candidates:
+            return "NO_SHIP", "sin candidatos en el run", []
+        
+        gate_ids = set(gates.keys())
+        expected_ids = set(expected_candidates)
+        if gate_ids != expected_ids:
+            extra = gate_ids - expected_ids
+            missing = expected_ids - gate_ids
+            problems = []
+            if extra:
+                problems.append("IDs extra en gates: %s" % ", ".join(sorted(extra)))
+            if missing:
+                problems.append("candidatos sin GateResult: %s" % ", ".join(sorted(missing)))
+            return "NO_SHIP", "IDs de gates no coinciden con candidatos: %s" % "; ".join(problems), []
+        
+        # P0-03: validar integridad de suite contra hash congelado
+        for cid in expected_candidates:
+            g = gates.get(cid, {})
             g_sha = g.get("suite_sha")
             if expected_suite_sha and g_sha != expected_suite_sha:
                 return "NO_SHIP", ("suite hash mismatch para %s: gate=%s run=%s" %
                                   (cid, g_sha, expected_suite_sha)), []
         
         # P0-06: requerir evaluaciones COMPLETAS para todos los candidatos
-        # Obtener lista de candidatos esperados desde el run
-        expected_candidates = list(run.get("candidates", {}).keys())
-        if not expected_candidates:
-            return "NO_SHIP", "sin candidatos en el run", []
-        
         # Verificar que TODOS los candidatos esperados tienen GateResult
         missing = [c for c in expected_candidates if c not in gates]
         if missing:
@@ -102,21 +122,26 @@ def resolve(run_dir, data=None):
                                   (cid, g_sha, expected_suite_sha)), []
             # aislamiento ya validado arriba para todos
         
+        # P0-A.4: candidate_manifest_sha y diff_sha obligatorios en cada gate concluido
+        for cid in expected_candidates:
+            g = gates.get(cid, {})
+            if not g.get("candidate_manifest_sha"):
+                return "NO_SHIP", "candidato %s sin candidate_manifest_sha en gate" % cid, []
+            if not g.get("diff_sha"):
+                return "NO_SHIP", "candidato %s sin diff_sha en gate" % cid, []
+        
         # Ahora sí: evaluar elegibilidad solo si todos están completos
-        eligible = sorted(c for c, g in gates.items() if g.get("state") == "PASS")
+        eligible = sorted(c for c in expected_candidates if gates.get(c, {}).get("state") == "PASS")
         if not gates:
-            return "NO_SHIP", "sin GateResult: la evaluacion no es confiable", eligible
+            return "NO_SHIP", "sin GateResult: la evaluacion no es confiable", []
         if not eligible:
-            return ("NO_SHIP", "ningun candidato supera los gates obligatorios",
-                    eligible)
+            return ("NO_SHIP", "ningun candidato supera los gates obligatorios", [])
         
         # P0-05: validar que el manifest del candidato no ha cambiado desde el gate
-        # Recalcular manifest actual y comparar con el guardado en el gate
         for cid in eligible:
             g = gates.get(cid, {})
             saved_manifest = g.get("candidate_manifest_sha")
             if saved_manifest:
-                # Recalcular manifest actual del candidato
                 import os
                 cdir = os.path.join(run_dir, "candidates", cid)
                 if os.path.isdir(cdir):

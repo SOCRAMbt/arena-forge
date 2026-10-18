@@ -623,18 +623,27 @@ def cmd_apply(args):
     if not args.approve:
         raise ForgeError("rehusado: exige --approve explicito y aplica a mano. "
                          "Nada del proyecto fue modificado.")
-    # P0-04: verificar baseline objetivo sin cambios
-        target_baseline = run.get("target_baseline_commit")
-        if target_baseline and target_baseline != "n/a-no-repo":
-            try:
-                cur = subprocess.run(["git", "rev-parse", "HEAD"], text=True,
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.DEVNULL).stdout.strip()
-                if cur and cur != target_baseline:
-                    raise ForgeError("baseline objetivo cambio (%s != %s); revisa antes de aplicar"
-                                     % (cur, target_baseline))
-            except OSError:
-                pass
+    # P0-04: verificar baseline objetivo sin cambios (siempre, antes de exportar)
+    target_baseline = run.get("target_baseline_commit")
+    target_baseline_dir = run.get("target_baseline_dir")
+    if target_baseline and target_baseline != "n/a-no-repo" and target_baseline_dir:
+        try:
+            cur = subprocess.run(["git", "-C", target_baseline_dir, "rev-parse", "HEAD"],
+                                 text=True, stdout=subprocess.PIPE,
+                                 stderr=subprocess.DEVNULL).stdout.strip()
+            if cur and cur != target_baseline:
+                raise ForgeError("baseline objetivo cambio (%s != %s); revisa antes de aplicar"
+                                 % (cur, target_baseline))
+            # Verificar dirty state si aplica
+            dirty = subprocess.run(["git", "-C", target_baseline_dir, "status", "--porcelain"],
+                                   text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL).stdout.strip()
+            if dirty:
+                raise ForgeError("baseline objetivo tiene cambios sin commit; exportar bloqueado")
+        except OSError:
+            raise ForgeError("no se pudo verificar baseline objetivo: %s" % target_baseline_dir)
+    elif run.get("baseline_manifest"):
+        # Fixture sin Git: comparar manifiesto
+        pass  # TODO: implementar comparación de manifiesto
     # P1-03: usar el mismo motor de decision que report (report_mod.resolve)
     data = report_mod.gather(d)
     data["candidates"] = run.get("candidates", {})

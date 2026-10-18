@@ -53,12 +53,17 @@ def _walk_files(root):
     if not os.path.isdir(root):
         return
     for dirpath, dirnames, filenames in os.walk(root):
-        # Skip __pycache__ and similar
-        dirnames[:] = sorted(d for d in dirnames if not d.startswith(".") and d != "__pycache__")
+        # Skip only specific cache directories, not all hidden dirs
+        dirnames[:] = sorted(d for d in dirnames 
+                            if d not in (".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"))
         for fname in sorted(filenames):
             if fname.endswith((".pyc",)):
                 continue
             ap = os.path.join(dirpath, fname)
+            # Verificar symlinks inseguros
+            if os.path.islink(ap):
+                if not _is_safe_symlink(root, ap):
+                    continue  # Saltar symlinks inseguros
             rel = os.path.relpath(ap, root)
             yield rel.replace("\\", "/"), ap
 
@@ -106,9 +111,29 @@ def capture_diff(baseline_dir, candidate_dir, name_hint=""):
 
 def _lines(path):
     if os.path.isfile(path):
+        # Detectar archivo binario
+        try:
+            with open(path, "rb") as fh:
+                chunk = fh.read(8192)
+                if b"\x00" in chunk:
+                    return ["[BINARY FILE]\n"]
+        except OSError:
+            pass
         with open(path, encoding="utf-8", errors="replace") as fh:
             return fh.readlines()
     return []
+
+
+def _is_safe_symlink(root, path):
+    """Verifica que un symlink no escape del root."""
+    try:
+        target = os.readlink(path)
+        target_abs = os.path.normpath(os.path.join(os.path.dirname(path), target))
+        root_real = os.path.realpath(root)
+        target_real = os.path.realpath(target_abs)
+        return target_real == root_real or target_real.startswith(root_real + os.sep)
+    except OSError:
+        return False
 
 
 def diff_sha(diff_text):
