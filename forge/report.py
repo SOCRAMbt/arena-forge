@@ -49,7 +49,10 @@ def gather(run_dir):
 
 
 def resolve(run_dir, data=None):
-    """Decision explicita con razon. Gates mandan sobre cualquier score."""
+    """Decision explicita con razon. Gates mandan sobre cualquier score.
+    
+    P0-01/P0-03: Requiere aislamiento verificado y suite hash intacto para WINNER.
+    """
     data = data or gather(run_dir)
     run = data["run"]
     gates = data["gates"]
@@ -60,6 +63,19 @@ def resolve(run_dir, data=None):
         return st, "estado terminal previo del run", []
 
     if mode == "patch":
+        # P0-01: validar aislamiento antes de considerar elegibles
+        isolation = data.get("isolation") or {}
+        if not isolation.get("ok"):
+            return "NO_SHIP", "aislamiento no verificado: %s" % isolation.get("problems", ["unknown"]), []
+        
+        # P0-03: validar integridad de suite contra hash congelado
+        expected_suite_sha = run.get("suite_sha")
+        for cid, g in gates.items():
+            g_sha = g.get("suite_sha")
+            if expected_suite_sha and g_sha != expected_suite_sha:
+                return "NO_SHIP", ("suite hash mismatch para %s: gate=%s run=%s" %
+                                  (cid, g_sha, expected_suite_sha)), []
+        
         eligible = sorted(c for c, g in gates.items() if g.get("state") == "PASS")
         if not gates:
             return "NO_SHIP", "sin GateResult: la evaluacion no es confiable", eligible

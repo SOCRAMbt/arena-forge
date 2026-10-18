@@ -62,8 +62,12 @@ def suite_sha(protected_suite):
 
 
 def run_gate(candidate_dir, protected_suite, gate_id=None, timeout_s=DEFAULT_CMD_TIMEOUT,
-             log_dir=None):
-    """Devuelve un GateResult dict. `protected_suite` vive FUERA del candidato."""
+             log_dir=None, expected_suite_sha=None):
+    """Devuelve un GateResult dict. `protected_suite` vive FUERA del candidato.
+    
+    Si se proporciona expected_suite_sha, valida que la suite actual coincida
+    con el hash congelado al inicializar el run (P0-03).
+    """
     ts = now_ts()
     gate_id = gate_id or ("suite:" + os.path.basename(candidate_dir.rstrip("/\\")))
     candidate_dir = os.path.realpath(candidate_dir)
@@ -95,8 +99,15 @@ def run_gate(candidate_dir, protected_suite, gate_id=None, timeout_s=DEFAULT_CMD
         result["failure_class"] = "environment_broken"
         return result
 
+    # P0-03: validar suite hash ANTES de ejecutar contra el hash congelado del run
     suite_before = suite_sha(protected_suite)
     result["suite_sha"] = suite_before
+    if expected_suite_sha is not None and suite_before != expected_suite_sha:
+        result["state"] = "BLOCKED"
+        result["failure_class"] = "suite_hash_mismatch"
+        result["notes"] = ("suite hash no coincide con el congelado en init: "
+                           "actual=%s esperado=%s" % (suite_before, expected_suite_sha))
+        return result
 
     # Contaminacion del harness: el candidato trae su propia suite.
     bad = _protected_names(candidate_dir)
@@ -130,9 +141,31 @@ def run_gate(candidate_dir, protected_suite, gate_id=None, timeout_s=DEFAULT_CMD
         rc, ver = _pytest_version()
         result["tool_version"] = ver
         try:
-            env = dict(os.environ)
-            existing = env.get("PYTHONPATH")
-            env["PYTHONPATH"] = scratch + (os.pathsep + existing if existing else "")
+            # P0-02: entorno mínimo allowlist - NO heredar os.environ completo
+            env = {}
+            # Variables esenciales para Python/pytest en Windows
+            for key in ("SYSTEMROOT", "TEMP", "TMP", "HOME", "USERPROFILE",
+                        "PYTHONIOENCODING", "PYTHONUTF8"):
+                val = os.environ.get(key)
+                if val:
+                    env[key] = val
+            # PATH: solo rutas esenciales (Python, System32) - NO el PATH completo del usuario
+            sys_paths = []
+            for key in ("PATH",):
+                val = os.environ.get(key)
+                if val:
+                    # Filtrar solo rutas de sistema y Python
+                    for p in val.split(os.pathsep):
+                        pl = p.lower()
+                        if any(x in pl for x in ("python", "system32", "windows", "syswow64")):
+                            sys_paths.append(p)
+            env["PATH"] = os.pathsep.join(sys_paths) if sys_paths else os.environ.get("SYSTEMROOT", "") + "\\System32"
+            # PYTHONPATH: scratch + user site-packages (para pytest) - NO el entorno completo
+            import site
+            user_site = site.getusersitepackages()
+            env["PYTHONPATH"] = scratch + os.pathsep + user_site
+            # Desactivar escritura de bytecode
+            env["PYTHONDONTWRITEBYTECODE"] = "1"
             proc = subprocess.run(cmd, cwd=scratch, text=True, env=env,
                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                   timeout=timeout_s)
@@ -150,9 +183,15 @@ def run_gate(candidate_dir, protected_suite, gate_id=None, timeout_s=DEFAULT_CMD
             result["state"] = "NOT_RUN"
             result["failure_class"] = "environment_broken"
 
-        # Integridad de la suite durante la evaluacion.
+        # P0-03: validar integridad contra hash congelado del run, no solo antes/despues
         suite_after = suite_sha(protected_suite)
-        if suite_after != suite_before:
+        if expected_suite_sha is not None and suite_after != expected_suite_sha:
+            result["state"] = "BLOCKED"
+            result["failure_class"] = "suite_hash_mismatch"
+            result["notes"] = ("suite hash cambiado durante evaluacion: "
+                               "actual=%s esperado=%s" % (suite_after, expected_suite_sha))
+        elif suite_after != suite_before:
+            # Fallback: detectar cambio durante evaluacion si no hay expected_suite_sha
             result["state"] = "BLOCKED"
             result["failure_class"] = "harness_tampering"
             out += "\nSUITE ALTERADA durante la evaluacion"
@@ -182,7 +221,7 @@ def _pytest_version():
         return 127, str(exc)
 
 
-def run_all(run_dir, suite, log_dir=None):
+def run_all(run_dir, suite, log_dir=None, expected_suite_sha=None):
     """Ejecuta el gate de suite sobre todos los candidatos del run."""
     cands_root = os.path.join(run_dir, "candidates")
     results = {}
@@ -190,7 +229,8 @@ def run_all(run_dir, suite, log_dir=None):
         for cand in sorted(os.listdir(cands_root)):
             cdir = os.path.join(cands_root, cand)
             if os.path.isdir(cdir):
-                results[cand] = run_gate(cdir, suite, log_dir=log_dir)
+                results[cand] = run_gate(cdir, suite, log_dir=log_dir,
+                                         expected_suite_sha=expected_suite_sha)
     return results
 
 

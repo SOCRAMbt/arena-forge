@@ -128,3 +128,25 @@ def redact(text, limit=8000):
 def now_ts():
     import time
     return int(time.time())
+
+
+# ------------------------------------------------------------------- persistencia
+FORGE_FILE = "forge.json"
+
+
+def atomic_write_json(path, data):
+    """Escritura atomica: tmp + rename para evitar corrupcion."""
+    import tempfile
+    dirn = os.path.dirname(path)
+    os.makedirs(dirn, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=dirn,
+                                     delete=False, suffix=".tmp") as tmp:
+        json.dump(data, tmp, ensure_ascii=False, indent=2)
+        tmp.flush()
+        os.fsync(tmp.fileno())
+        tmp_name = tmp.name
+    os.replace(tmp_name, path)
+
+
+def save_forge(run):
+    atomic_write_json(os.path.join(run["dir"], FORGE_FILE), run)

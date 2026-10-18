@@ -33,7 +33,8 @@ from forge import (adapter, agent_e, benchmark as bench_mod, contracts,
                    state)
 from forge import gates as gate_engine
 from forge.util import (ForgeError, MAX_OUTPUT_BYTES, atomic_write_json,
-                        inside, read_json_bounded, redact, sha_file, sha_text)
+                        inside, read_json_bounded, redact, sha_file, sha_text,
+                        save_forge)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BRACKET = os.path.join(HERE, "vendor", "arena-skill", "bracket.py")
@@ -115,10 +116,6 @@ def load_forge(d):
     return data
 
 
-def save_forge(run):
-    atomic_write_json(os.path.join(run["dir"], FORGE_FILE), run)
-
-
 def log_event(run, kind, detail=""):
     """Compat: evento tanto en forge.json como en el ledger append-only."""
     run.setdefault("events", []).append(
@@ -184,12 +181,19 @@ def _set_phase(run, target, trigger=""):
 
 # ============================================================ commands: core
 def cmd_plan(args):
-    r = bracket_cmd("plan", "--agents", str(args.agents or 100),
+    profile = getattr(args, "profile", None) or "standard"
+    budget = agent_e.budget_for(profile)
+    max_cands = budget.get("max_candidates", 8)
+    n = args.agents if args.agents is not None else max_cands
+    if n > max_cands:
+        raise ForgeError("--agents %d excede max_candidates=%d del perfil %s"
+                         % (n, max_cands, profile))
+    r = bracket_cmd("plan", "--agents", str(n),
                     "--wave", str(args.wave))
     print(r.stdout, end="")
     try:
         out = subprocess.run(
-            [sys.executable, BRACKET, "plan", "--agents", str(args.agents or 100),
+            [sys.executable, BRACKET, "plan", "--agents", str(n),
              "--wave", str(args.wave), "--json"],
             text=True, stdout=subprocess.PIPE).stdout
         data = json.loads(out)
@@ -197,6 +201,9 @@ def cmd_plan(args):
               "(+1 si hay baseline). Coste monetario NO medible: el proveedor no "
               "expone tokens por API; limites reales = llamadas/olas/tiempo."
               % (data["calls"], data["waves"], args.wave))
+        print("perfil: %s  max_candidates=%d  max_calls=%d  max_rounds=%d  concurrency=%d"
+              % (profile, budget.get("max_candidates"), budget.get("max_calls"),
+                 budget.get("max_rounds"), budget.get("concurrency")))
     except (ValueError, KeyError):
         pass
     print("no se inicia ningun agente en `plan`. Perfiles: quick|standard|extreme "
@@ -205,13 +212,23 @@ def cmd_plan(args):
 
 
 def cmd_init(args):
-    n = args.quick and 4 or (args.agents or (100 if args.mode == "answer" else 4))
+    # P0-06: defaults conservadores (no 100 por defecto)
+    default_agents = 4  # tanto answer como patch
+    n = args.agents if args.agents is not None else (args.quick and 4 or default_agents)
+    
     if args.mode not in ("answer", "patch"):
         raise ForgeError("--mode debe ser answer o patch")
     profile = getattr(args, "profile", None) or "standard"
     if profile == "extreme" and not getattr(args, "confirm", False):
         raise ForgeError("perfil extreme exige --confirm (plan y presupuesto "
                          "explicitos). Nada fue creado.")
+    
+    # P0-06: validar agentes contra presupuesto del perfil ANTES de crear run
+    budget = agent_e.budget_for(profile)
+    max_cands = budget.get("max_candidates", 8)
+    if n > max_cands:
+        raise ForgeError("--agents %d excede max_candidates=%d del perfil %s"
+                         % (n, max_cands, profile))
     parts = ["init", "--agents", str(n)]
     if args.seed is not None:
         parts += ["--seed", str(args.seed)]
@@ -290,7 +307,7 @@ def _prepare_patch(run, d, args):
         if existing:
             ids = existing
     proof = isolation.ensure_workspaces(d, ids)
-    # baseline copia local para diffs controlados
+    # baseline copia local para diffs controlados (P0-04: recursivo)
     src = os.path.abspath(baseline_dir) if baseline_dir else None
     if src and os.path.isdir(src):
         bdir = os.path.join(d, "baseline")
@@ -299,7 +316,10 @@ def _prepare_patch(run, d, args):
             s = os.path.join(src, name)
             if os.path.isfile(s):
                 shutil.copy2(s, os.path.join(bdir, name))
-    # Cada candidato arranca desde el mismo baseline (§2 Modo B paso 4).
+            elif os.path.isdir(s):
+                shutil.copytree(s, os.path.join(bdir, name),
+                                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    # Cada candidato arranca desde el mismo baseline (P0-04: recursivo).
     for cid in ids:
         cdir = os.path.join(d, "candidates", cid)
         if src and os.path.isdir(src):
@@ -307,6 +327,9 @@ def _prepare_patch(run, d, args):
                 s = os.path.join(src, name)
                 if os.path.isfile(s) and not name.lower().endswith((".pyc",)):
                     shutil.copy2(s, os.path.join(cdir, name))
+                elif os.path.isdir(s):
+                    shutil.copytree(s, os.path.join(cdir, name),
+                                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     atomic_write_json(os.path.join(d, "isolation.json"), proof)
     ledger.append(d, "isolation", "candidates=%d ok=%s" % (len(ids), proof["ok"]),
                   refs={"proof": "isolation.json"})
@@ -316,12 +339,11 @@ def _prepare_patch(run, d, args):
                                "workspace_ref": os.path.join("candidates", cid),
                                "isolation_verified": proof["ok"],
                                "status": "PENDING", "eligible": None}
-                         for cid in ids}
+                          for cid in ids}
     save_forge(run)
     _set_phase(run, "PREPARING", "workspaces")
     _set_phase(run, "READY", "harness listo")
     print("patch: %d workspaces aislados; aislamiento ok=%s" % (len(ids), proof["ok"]))
-
 
 def cmd_next(args):
     d = run_dir_from(args)
@@ -374,15 +396,51 @@ def _load(path):
 
 
 # ============================================================ gates (patch)
+def _verify_isolation(d, run):
+    """Valida isolation.json antes de ejecutar gates. Devuelve (ok, problems)."""
+    isolation_path = os.path.join(d, "isolation.json")
+    if not os.path.isfile(isolation_path):
+        return False, ["isolation.json ausente"]
+    proof = _load(isolation_path)
+    if not proof or not proof.get("ok"):
+        problems = proof.get("problems", ["isolation.ok == false"]) if proof else ["isolation.json malformado"]
+        return False, problems
+    # Revalidar rutas reales actuales
+    run_dir = d
+    for cid, info in proof.get("candidates", {}).items():
+        real = info.get("realpath")
+        if not real or not os.path.isdir(real):
+            return False, ["candidato %s: directorio no existe: %s" % (cid, real)]
+        if not isolation.inside(run_dir, real):
+            return False, ["candidato %s escapa del run: %s" % (cid, real)]
+    return True, []
+
+
 def cmd_gates(args):
     d = run_dir_from(args)
     run = load_forge(d)
     if not run.get("suite"):
         raise ForgeError("esta ejecucion no tiene suite (modo answer o init sin --suite)")
-    if run.get("mode") == "patch" and run.get("phase") in ("READY",):
-        _set_phase(run, "RUNNING", "gates")
+    if run.get("mode") == "patch":
+        # P0-01: validar aislamiento ANTES de ejecutar gates
+        iso_ok, iso_problems = _verify_isolation(d, run)
+        if not iso_ok:
+            print("aislamiento NO verificado: %s" % "; ".join(iso_problems))
+            # Marcar candidatos como BLOCKED por aislamiento
+            for cid in run.get("candidates", {}):
+                run["candidates"][cid]["isolation_verified"] = False
+                run["candidates"][cid]["status"] = "BLOCKED"
+                run["candidates"][cid]["eligible"] = False
+            save_forge(run)
+            ledger.append(d, "gates_blocked", "aislamiento invalido: %s" % iso_problems)
+            return 1
+        if run.get("phase") in ("READY",):
+            _set_phase(run, "RUNNING", "gates")
     log_dir = os.path.join(d, "artifacts", "logs")
-    results = gate_engine.run_all(d, run["suite"], log_dir=log_dir)
+    # P0-03: pasar suite_sha congelado para validacion
+    expected_suite_sha = run.get("suite_sha")
+    results = gate_engine.run_all(d, run["suite"], log_dir=log_dir,
+                                   expected_suite_sha=expected_suite_sha)
     if not results:
         print("sin candidatos en %s" % os.path.join(d, "candidates"))
     for c, g in results.items():
@@ -392,7 +450,8 @@ def cmd_gates(args):
         cand.setdefault("candidate_id", c)
         cand.setdefault("run_id", run["run_id"])
         cand.setdefault("workspace_ref", os.path.join("candidates", c))
-        cand["isolation_verified"] = True
+        # P0-01: isolation_verified deriva de verificacion real, no True incondicional
+        cand["isolation_verified"] = iso_ok if run.get("mode") == "patch" else True
         cand["status"] = "EVALUATED"
         cand["eligible"] = (g["state"] == "PASS")
         print("%s: %s (exit=%s)" % (c, g["state"], g.get("exit_code")))
@@ -414,22 +473,41 @@ def cmd_resume(args):
     ok, problems = ledger.verify(d)
     if not ok:
         print("ledger: %d problema(s) -> se conserva y se registra" % len(problems))
-    before = {}
-    arena_path = os.path.join(d, "arena.json")
-    if os.path.isfile(arena_path):
-        st = _load(arena_path) or {}
-        for rd in st.get("rounds", []):
-            for m in rd.get("matches", []):
-                if m.get("winner"):
-                    before[m["id"]] = m["winner"]
-    print("completados persistidos: %d matches con ganador; ledger seq=%s"
-          % (len(before), ledger.last_ref(d)))
-    r = bracket_cmd("next", "--dir", d)
-    print(r.stdout, end="")
-    log_event(run, "resume", "%d completados intactos" % len(before))
-    return r.returncode
-
-
+    
+    mode = run.get("mode", "answer")
+    if mode == "answer":
+        before = {}
+        arena_path = os.path.join(d, "arena.json")
+        if os.path.isfile(arena_path):
+            st = _load(arena_path) or {}
+            for rd in st.get("rounds", []):
+                for m in rd.get("matches", []):
+                    if m.get("winner"):
+                        before[m["id"]] = m["winner"]
+        print("completados persistidos: %d matches con ganador; ledger seq=%s"
+              % (len(before), ledger.last_ref(d)))
+        r = bracket_cmd("next", "--dir", d)
+        print(r.stdout, end="")
+        log_event(run, "resume", "%d completados intactos (answer)" % len(before))
+    elif mode == "patch":
+        # P1-01: Reconciliar jobs Patch desde jobs.json, NO llamar bracket next
+        jobs = _load(os.path.join(d, "jobs.json")) or {}
+        pending = [j for j in jobs.values() if j.get("state") == "PENDING"]
+        running = [j for j in jobs.values() if j.get("state") == "RUNNING"]
+        done = [j for j in jobs.values() if j.get("state") == "DONE"]
+        failed = [j for j in jobs.values() if j.get("state") == "FAILED"]
+        print("resume Patch: pending=%d running=%d done=%d failed=%d"
+              % (len(pending), len(running), len(done), len(failed)))
+        # Reconciliar: jobs RUNNING sin session_ref son dudosos
+        for job in running:
+            if not job.get("session_ref"):
+                print("  ADVERTENCIA: job %s RUNNING sin session_ref" % job["job_id"])
+        log_event(run, "resume", "patch jobs: PENDING=%d RUNNING=%d DONE=%d FAILED=%d"
+                  % (len(pending), len(running), len(done), len(failed)))
+    else:
+        print("modo desconocido: %s" % mode)
+        return 1
+    return 0
 def cmd_cancel(args):
     d = run_dir_from(args)
     run = load_forge(d)
@@ -499,7 +577,7 @@ def cmd_apply(args):
     if not args.approve:
         raise ForgeError("rehusado: exige --approve explicito y aplica a mano. "
                          "Nada del proyecto fue modificado.")
-    # verificar baseline sin cambios (§6.8)
+    # verificar baseline sin cambios (\u00a76.8)
     if run.get("baseline_commit") not in (None, "n/a-no-repo"):
         try:
             cur = subprocess.run(["git", "rev-parse", "HEAD"], text=True,
@@ -510,13 +588,13 @@ def cmd_apply(args):
                                  % (cur, run["baseline_commit"]))
         except OSError:
             pass
-    if run.get("mode") == "patch":
-        gates = _load(os.path.join(d, "gates.json")) or {}
-        champ, why = resolve_patch_winner(d, run, gates)
-    else:
-        champ = (_load(os.path.join(d, "arena.json")) or {}).get("champion")
-    if not champ:
-        raise ForgeError("sin campeon: nada que aplicar (NO_SHIP)")
+    # P1-03: usar el mismo motor de decision que report (report_mod.resolve)
+    data = report_mod.gather(d)
+    data["candidates"] = run.get("candidates", {})
+    decision, reason, eligible = report_mod.resolve(d, data)
+    if decision != "WINNER" or not eligible:
+        raise ForgeError("sin campeon: decision=%s, elegibles=%s" % (decision, eligible))
+    champ = eligible[0]  # report.resolve ya valida y devuelve un solo ganador
     cdir = os.path.join(d, "candidates", champ)
     base = os.path.join(d, "baseline")
     patch_lines = []
@@ -537,9 +615,24 @@ def cmd_apply(args):
     print("parche preparado (SOLO archivo, proyecto intacto): %s" % out)
     print("revisa, luego: git apply --check %s" % out)
     return 0
+def cmd_decide(args):
+    d = run_dir_from(args)
+    run = load_forge(d)
+    decision = agent_e.step(d, run)
+    print("E decision: %s -> %s (riesgo %s, state=%s)"
+          % (decision["action_type"], decision["reason"],
+             decision["risk_level"], decision["execution_state"]))
+    print("cost_estimate: %s | presupuesto restante (calls): %s"
+          % (decision["cost_estimate"], decision["budget_remaining"]))
+    if decision["execution_state"] == "succeeded":
+        print("ACCION EJECUTADA: %s" % decision["action_type"])
+    elif decision["execution_state"] == "failed":
+        print("ACCION FALLIDA: %s" % decision["reason"])
+    elif decision["execution_state"] == "blocked":
+        print("ACCION BLOQUEADA: %s" % decision["reason"])
+    return 0
 
 
-# ============================================================ E / state / ledger
 def cmd_adapter(args):
     if args.probe:
         version, raw = adapter.detect_version()
@@ -709,7 +802,9 @@ def build_parser():
     sub.required = True
 
     s = sub.add_parser("plan", help="estimacion sin escribir archivos")
-    s.add_argument("--agents", type=int, default=100)
+    s.add_argument("--agents", type=int)
+    s.add_argument("--profile", choices=("quick", "standard", "extreme"),
+                   default="standard")
     s.add_argument("--wave", type=int, default=10)
     s.set_defaults(func=cmd_plan)
 

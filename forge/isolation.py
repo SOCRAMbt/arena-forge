@@ -48,21 +48,59 @@ def ensure_workspaces(run_dir, candidate_ids):
     return proof
 
 
+def _walk_files(root):
+    """Genera (relpath, abspath) para todos los ficheros bajo root (recursivo)."""
+    if not os.path.isdir(root):
+        return
+    for dirpath, dirnames, filenames in os.walk(root):
+        # Skip __pycache__ and similar
+        dirnames[:] = sorted(d for d in dirnames if not d.startswith(".") and d != "__pycache__")
+        for fname in sorted(filenames):
+            if fname.endswith((".pyc",)):
+                continue
+            ap = os.path.join(dirpath, fname)
+            rel = os.path.relpath(ap, root)
+            yield rel.replace("\\", "/"), ap
+
+
 def capture_diff(baseline_dir, candidate_dir, name_hint=""):
-    """Diff unificado de los ficheros del candidato respecto al baseline."""
+    """Diff unificado recursivo de los ficheros del candidato respecto al baseline."""
     chunks = []
     if not os.path.isdir(candidate_dir):
         return ""
-    for name in sorted(os.listdir(candidate_dir)):
-        p_new = os.path.join(candidate_dir, name)
-        if not os.path.isfile(p_new):
-            continue
-        p_old = os.path.join(baseline_dir, name)
-        old = _lines(p_old)
-        new = _lines(p_new)
-        rel = os.path.join(name_hint, name) if name_hint else name
-        chunks.append("".join(difflib.unified_diff(
-            old, new, "a/" + rel, "b/" + rel)))
+    
+    # Recopilar archivos del baseline
+    baseline_files = dict(_walk_files(baseline_dir))
+    candidate_files = dict(_walk_files(candidate_dir))
+    
+    all_paths = sorted(set(baseline_files.keys()) | set(candidate_files.keys()))
+    
+    for rel in all_paths:
+        p_old = baseline_files.get(rel)
+        p_new = candidate_files.get(rel)
+        
+        if p_old and p_new:
+            # Archivo modificado
+            old = _lines(p_old)
+            new = _lines(p_new)
+            if old != new:
+                rel_full = os.path.join(name_hint, rel) if name_hint else rel
+                chunks.append("".join(difflib.unified_diff(
+                    old, new, "a/" + rel_full, "b/" + rel_full)))
+        elif p_new and not p_old:
+            # Archivo nuevo
+            new = _lines(p_new)
+            old = []
+            rel_full = os.path.join(name_hint, rel) if name_hint else rel
+            chunks.append("".join(difflib.unified_diff(
+                old, new, "/dev/null", "b/" + rel_full)))
+        elif p_old and not p_new:
+            # Archivo eliminado
+            old = _lines(p_old)
+            new = []
+            rel_full = os.path.join(name_hint, rel) if name_hint else rel
+            chunks.append("".join(difflib.unified_diff(
+                old, new, "a/" + rel_full, "/dev/null")))
     return "".join(chunks)
 
 
@@ -100,10 +138,14 @@ def apply_diff_to_temp(diff_text, baseline_dir):
         raise ForgeError("diff inseguro: %s" % "; ".join(problems))
     scratch = tempfile.mkdtemp(prefix="forge-isolate-")
     if os.path.isdir(baseline_dir):
+        # Copia recursiva del baseline preservando estructura de directorios
         for name in os.listdir(baseline_dir):
             src = os.path.join(baseline_dir, name)
+            dst = os.path.join(scratch, name)
             if os.path.isfile(src):
-                shutil.copy2(src, os.path.join(scratch, name))
+                shutil.copy2(src, dst)
+            elif os.path.isdir(src):
+                shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
     if diff_text.strip():
         # parche compatible con `patch -p1`/`git apply`; se aplica con difflib no
         # disponible -> usamos `git apply` si hay git, si no `patch`.
