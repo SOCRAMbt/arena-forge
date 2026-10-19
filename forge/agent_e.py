@@ -9,22 +9,46 @@ Aqui E es DETERMINISTA y auditable (no oculta razonamiento): observa el estado e
 disco, produce una Decision estructurada, la valida y la persiste en
 `decisions.jsonl` + ledger. La eficacia adaptativa frente a orquestacion fija es
 una HIPOTESIS PENDIENTE hasta que el benchmark la demuestre (§22).
+
+CORRECCIONES DE LA AUDITORIA (estado real, no declaracion)
+-----------------------------------------------------------
+1. `requires_human_approval` ahora SE APLICA: sin un registro de aprobacion
+   ligado a decision/run/accion/targets/coste, la decision queda
+   `awaiting_approval` y NO se ejecuta.
+2. Registrar un job NO es ejecutar trabajo. `_exec_launch_phase` deja la
+   decision en `delegated` / `awaiting_manual_action`, nunca `succeeded`.
+3. `_exec_request_evidence` no puede devolver exito sin evidencia.
+4. El presupuesto se RESERVA bajo lock de SISTEMA OPERATIVO antes de crear el
+   job (antes se gastaba despues, sin lock: se podia gastar mas del limite).
+5. `decisions.jsonl` es append-only: las transiciones se anaden, nunca se
+   reescribe el historico. Las lineas corruptas se PRESERVAN.
+6. Los job_ids son deterministas: reanudar no duplica trabajo ni cobra dos
+   veces.
+7. Las transiciones de fase pasan por `state.transition`: un run CANCELLED no
+   se reabre en silencio como COMPLETED.
 """
 import json
 import os
 import time
 
 from . import ledger, state
-from .util import ForgeError, now_ts, save_forge
+from .util import FileLock, ForgeError, now_ts, save_forge
 
 DECISIONS_FILE = "decisions.jsonl"
+STATE_FILE = "decision_state.json"
 JOBS_FILE = "jobs.json"
-POLICY_VERSION = "e-policy-v1"
+LOCK_FILE = ".forge.lock"
+POLICY_VERSION = "e-policy-v2"
 ACTION_TYPES = ("launch_phase", "extra_round", "request_review",
                 "request_evidence", "stop", "recommend_no_ship", "apply_budget")
 RISK_LEVELS = ("low", "medium", "high")
-EXECUTION_STATES = ("proposed", "approved", "executing", "succeeded",
+EXECUTION_STATES = ("proposed", "approved", "awaiting_approval",
+                    "awaiting_manual_action", "awaiting_evidence",
+                    "delegated", "executing", "succeeded",
                     "failed", "blocked", "cancelled")
+
+# Acciones que SIEMPRE requieren aprobacion humana.
+HUMAN_APPROVAL_ACTIONS = ("apply_budget", "extra_round")
 
 DECISION_REQUIRED = (
     "decision_id", "run_id", "observed_state_version", "action_type",
@@ -33,6 +57,9 @@ DECISION_REQUIRED = (
     "timestamp", "policy_version", "requires_human_approval", "execution_state",
     "executed_by", "session_ref", "output_ref",
 )
+
+JOB_STATES = ("PENDING", "RUNNING", "AWAITING_MANUAL_ACTION", "SUCCEEDED",
+              "FAILED", "BLOCKED", "CANCELLED", "DONE")
 
 
 def default_budget():
@@ -76,6 +103,9 @@ def validate_decision(d, where="Decision"):
             errors.append("%s: falta %r" % (where, k))
     if errors:
         return errors
+    unknown = sorted(set(d.keys()) - set(DECISION_REQUIRED))
+    if unknown:
+        errors.append("%s: campos desconocidos: %s" % (where, ", ".join(unknown)))
     if d["action_type"] not in ACTION_TYPES:
         errors.append("%s.action_type invalido: %r" % (where, d["action_type"]))
     if d["risk_level"] not in RISK_LEVELS:
@@ -95,6 +125,36 @@ def validate_decision(d, where="Decision"):
         errors.append("%s: coste estimado %d excede presupuesto %d" % (where, est, rem))
     if not isinstance(d["requires_human_approval"], bool):
         errors.append("%s.requires_human_approval debe ser booleano" % where)
+    return errors
+
+
+def validate_approval(approval, decision, where="Aprobacion"):
+    """Un registro de aprobacion debe LIGARse a la decision de forma estricta."""
+    errors = []
+    if not isinstance(approval, dict):
+        return ["%s: no es un objeto" % where]
+    for k in ("decision_id", "run_id", "action_type", "target_ids",
+              "cost_calls", "policy_version", "approved_by"):
+        if k not in approval:
+            errors.append("%s: falta %r" % (where, k))
+    if errors:
+        return errors
+    if not str(approval.get("approved_by") or "").strip():
+        errors.append("%s: `approved_by` vacio" % where)
+    if errors:
+        return errors
+    if approval["decision_id"] != decision.get("decision_id"):
+        errors.append("%s: decision_id no coincide" % where)
+    if approval["run_id"] != decision.get("run_id"):
+        errors.append("%s: run_id no coincide" % where)
+    if approval["action_type"] != decision.get("action_type"):
+        errors.append("%s: action_type no coincide" % where)
+    if list(approval["target_ids"]) != list(decision.get("target_ids", [])):
+        errors.append("%s: target_ids no coinciden" % where)
+    if approval["cost_calls"] != decision.get("cost_estimate", {}).get("calls"):
+        errors.append("%s: cost_calls no coincide" % where)
+    if approval["policy_version"] != decision.get("policy_version"):
+        errors.append("%s: policy_version no coincide" % where)
     return errors
 
 
@@ -121,7 +181,7 @@ def context(run_dir, run):
         "mode": run.get("mode"),
         "schema_version": run.get("schema_version"),
         "phase": run.get("phase") or run.get("status"),
-        "state_version": (events[-1]["seq"] if events else 0),
+        "state_version": ledger.last_valid_seq(run_dir),
         "budget": run.get("budget", {}),
         "gates": {c: g.get("state") for c, g in gates.items()},
         "eligible": sorted(c for c, g in gates.items() if g.get("state") == "PASS"),
@@ -130,15 +190,24 @@ def context(run_dir, run):
         "jobs_pending": [j for j, v in jobs.items() if v.get("state") == "PENDING"],
         "jobs_running": [j for j, v in jobs.items() if v.get("state") == "RUNNING"],
         "jobs_failed": [j for j, v in jobs.items() if v.get("state") == "FAILED"],
-        "events_last_seq": (events[-1]["seq"] if events else 0),
+        "events_last_seq": ledger.last_valid_seq(run_dir),
         "runtime_caps": _load(run_dir, "runtime.json") or {},
         "approvals": run.get("approvals", []),
+        "calls_spent": run.get("calls_spent", 0),
+        "calls_reserved": run.get("calls_reserved", 0),
     }
 
 
 # ------------------------------------------------------------- decision
 def _mk_decision(run, ctx, action, reason, targets, evidence, calls, risk,
                  prereqs=None, stops=None, human=False):
+    budget = run.get("budget", {})
+    max_calls = budget.get("max_calls", 0)
+    spent = run.get("calls_spent", 0)
+    reserved = run.get("calls_reserved", 0)
+    remaining = max(0, max_calls - spent - reserved)
+    if action in HUMAN_APPROVAL_ACTIONS:
+        human = True
     return {
         "decision_id": "d-%s-%s" % (run.get("run_id"), ctx["state_version"] + 1),
         "run_id": run.get("run_id"),
@@ -148,10 +217,7 @@ def _mk_decision(run, ctx, action, reason, targets, evidence, calls, risk,
         "reason": reason,
         "evidence_refs": evidence,
         "cost_estimate": {"calls": calls, "waves": 1, "seconds": calls * 20},
-        "budget_remaining": {
-            "calls": max(0, run.get("budget", {}).get("max_calls", 0)
-                         - run.get("calls_spent", 0)),
-        },
+        "budget_remaining": {"calls": remaining},
         "risk_level": risk,
         "preconditions": prereqs or [],
         "stop_conditions": stops or [],
@@ -170,7 +236,7 @@ def propose(run_dir, run):
     ctx = context(run_dir, run)
     budget = run.get("budget", {})
     max_calls = budget.get("max_calls", 0)
-    spent = run.get("calls_spent", 0)
+    spent = run.get("calls_spent", 0) + run.get("calls_reserved", 0)
 
     if spent >= max_calls:
         return _mk_decision(run, ctx, "stop",
@@ -208,7 +274,7 @@ def propose(run_dir, run):
         if ctx["champion"]:
             return _mk_decision(run, ctx, "stop", "campeon ya elegido: %s"
                                 % ctx["champion"], [ctx["champion"]],
-                                ["arena.json"], 0, "low", stops=["champion"])
+                                ["arena.json"], 0, "low", stops=["campeon"])
         return _mk_decision(run, ctx, "launch_phase",
                             "continuar bracket answer (fase %s)" % phase,
                             [], ["ledger:%d" % ctx["state_version"]], 2, "low")
@@ -227,7 +293,9 @@ def propose(run_dir, run):
                         [], ["ledger:%d" % ctx["state_version"]], 1, "medium")
 
 
+# ------------------------------------------------------------- persistencia
 def persist(run_dir, decision):
+    """Anade una decision al historico append-only. NUNCA reescribe."""
     errors = validate_decision(decision)
     if errors:
         ledger.append(run_dir, "decision_rejected", "; ".join(errors),
@@ -243,7 +311,100 @@ def persist(run_dir, decision):
     return decision
 
 
-# ------------------------------------------------------------- execution
+def _persist_decision(run_dir, decision):
+    """Anade una TRANSICION de estado al historico append-only.
+
+    El fichero `decisions.jsonl` es append-only: cada transicion es una linea
+    nueva. La proyeccion (ultimo estado por decision_id) vive aparte en
+    `decision_state.json`. Las lineas corruptas se PRESERVAN: no se borran ni
+    se reescribe el historico para "limpiarlas".
+    """
+    path = os.path.join(run_dir, DECISIONS_FILE)
+    with open(path, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(decision, ensure_ascii=False) + "\n")
+    # Proyeccion (estado actual por decision_id)
+    from .util import atomic_write_json
+    projection = _load(run_dir, STATE_FILE) or {}
+    projection[decision["decision_id"]] = decision
+    atomic_write_json(os.path.join(run_dir, STATE_FILE), projection)
+    ledger.append(run_dir, "decision", "%s: %s (state=%s)" % (
+        decision["action_type"], decision["reason"], decision["execution_state"]),
+        refs={"decision_id": decision["decision_id"],
+              "action": decision["action_type"],
+              "execution_state": decision["execution_state"]}, actor="E")
+
+
+# ------------------------------------------------------------- presupuesto
+def _run_lock(run_dir):
+    return FileLock(os.path.join(run_dir, LOCK_FILE))
+
+
+def reserve_budget(run_dir, cost):
+    """Reserva presupuesto de forma ATOMICA. Devuelve (ok, reason).
+
+    La reserva ocurre ANTES de crear el job, bajo lock de sistema operativo:
+    dos procesos concurrentes no pueden gastar mas del limite.
+    """
+    if cost <= 0:
+        return True, "coste 0"
+    with _run_lock(run_dir):
+        run = _load(run_dir, "forge.json")
+        if not run:
+            return False, "forge.json ausente"
+        budget = run.get("budget", {})
+        max_calls = budget.get("max_calls", 0)
+        spent = run.get("calls_spent", 0)
+        reserved = run.get("calls_reserved", 0)
+        remaining = max_calls - spent - reserved
+        if cost > remaining:
+            return False, ("presupuesto insuficiente: quedan %d llamadas, se "
+                           "pidieron %d (max_calls=%d, gastadas=%d, reservadas=%d)"
+                           % (remaining, cost, max_calls, spent, reserved))
+        run["calls_reserved"] = reserved + cost
+        save_forge(run, run_dir)
+    return True, "reservadas %d llamadas" % cost
+
+
+def commit_budget(run_dir, cost):
+    """Convierte la reserva en gasto efectivo."""
+    if cost <= 0:
+        return
+    with _run_lock(run_dir):
+        run = _load(run_dir, "forge.json")
+        if not run:
+            return
+        run["calls_reserved"] = max(0, run.get("calls_reserved", 0) - cost)
+        spent = run.get("calls_spent", 0) + cost
+        max_calls = run.get("budget", {}).get("max_calls", 0)
+        if spent + run.get("calls_reserved", 0) > max_calls:
+            # Nunca se gasta mas de lo permitido: el limite es duro.
+            spent = max(0, max_calls - run.get("calls_reserved", 0))
+        run["calls_spent"] = spent
+        save_forge(run, run_dir)
+
+
+def release_budget(run_dir, cost):
+    """Libera una reserva (el job no llego a ejecutarse)."""
+    if cost <= 0:
+        return
+    with _run_lock(run_dir):
+        run = _load(run_dir, "forge.json")
+        if not run:
+            return
+        run["calls_reserved"] = max(0, run.get("calls_reserved", 0) - cost)
+        save_forge(run, run_dir)
+
+
+def get_budget_remaining(run):
+    """Presupuesto restante REAL (descontando lo reservado, no solo lo gastado)."""
+    budget = run.get("budget", {})
+    max_calls = budget.get("max_calls", 0)
+    spent = run.get("calls_spent", 0)
+    reserved = run.get("calls_reserved", 0)
+    return max(0, max_calls - spent - reserved)
+
+
+# -------------------------------------------------------------- ejecucion
 def _load_jobs(run_dir):
     jobs = _load(run_dir, JOBS_FILE)
     if jobs is None:
@@ -256,34 +417,52 @@ def _save_jobs(run_dir, jobs):
     atomic_write_json(os.path.join(run_dir, JOBS_FILE), jobs)
 
 
+def job_id_for(run_id, phase, action_type, target_ids):
+    """ID determinista: reanudar no crea jobs duplicados."""
+    import json as _json
+    from .util import sha_text
+    # Codificacion canonica: los separadores NO son ambiguos (un target
+    # "a,b" no puede colisionar con dos targets "a" y "b").
+    key = _json.dumps([str(run_id), str(phase), str(action_type),
+                       sorted(str(t) for t in target_ids)],
+                      sort_keys=True, separators=(",", ":"))
+    return "job-%s" % sha_text(key)[:16]
+
+
 def _register_job(run_dir, job_id, phase, target_ids, action_type, budget_calls=1):
-    """Registra un job en jobs.json y actualiza calls_spent en forge.json."""
-    jobs = _load_jobs(run_dir)
-    job = {
-        "job_id": job_id,
-        "phase": phase,
-        "action_type": action_type,
-        "target_ids": target_ids,
-        "state": "PENDING",
-        "created_ts": now_ts(),
-        "started_ts": None,
-        "completed_ts": None,
-        "session_ref": None,
-        "output_ref": None,
-        "attempts": 0,
-        "max_attempts": 1,
-        "budget_calls": budget_calls,
-    }
-    jobs[job_id] = job
-    _save_jobs(run_dir, jobs)
-    
-    # Actualizar calls_spent en forge.json
-    run = _load(run_dir, "forge.json")
-    if run:
-        run["calls_spent"] = run.get("calls_spent", 0) + budget_calls
-        from .util import save_forge
-        save_forge(run)
-    return job
+    """Registra un job. El presupuesto se RESERVA antes (bajo lock).
+
+    El job_id es determinista: si ya existe, no se duplica ni se cobra dos
+    veces (reanudar es seguro).
+    """
+    # Todo el ciclo (leer jobs.json -> comprobar id -> reservar -> escribir)
+    # bajo un unico lock: dos procesos concurrentes no pueden registrar el
+    # mismo job dos veces ni perder entradas.
+    with _run_lock(run_dir):
+        jobs = _load_jobs(run_dir)
+        if job_id in jobs:
+            return jobs[job_id], False
+        ok, reason = reserve_budget(run_dir, budget_calls)
+        if not ok:
+            raise ForgeError("no se pudo registrar el job %s: %s" % (job_id, reason))
+        job = {
+            "job_id": job_id,
+            "phase": phase,
+            "action_type": action_type,
+            "target_ids": list(target_ids),
+            "state": "PENDING",
+            "created_ts": now_ts(),
+            "started_ts": None,
+            "completed_ts": None,
+            "session_ref": None,
+            "output_ref": None,
+            "attempts": 0,
+            "max_attempts": 1,
+            "budget_calls": budget_calls,
+        }
+        jobs[job_id] = job
+        _save_jobs(run_dir, jobs)
+        return job, True
 
 
 def _update_job(run_dir, job_id, **kwargs):
@@ -295,19 +474,47 @@ def _update_job(run_dir, job_id, **kwargs):
     return None
 
 
+def _approval_for(run, decision):
+    """Busca un registro de aprobacion valido para la decision."""
+    for approval in (run.get("approvals") or []):
+        if not validate_approval(approval, decision):
+            return approval
+    return None
+
+
 def execute_decision(run_dir, decision, run, session_id=None):
     """Ejecuta una decision validada. Devuelve (success, updated_decision).
-    
+
     Estados: PROPOSED -> APPROVED -> EXECUTING -> SUCCEEDED | FAILED | BLOCKED
+    Si requiere aprobacion humana y no la hay: AWAITING_APPROVAL (no ejecuta).
     """
+    errors = validate_decision(decision)
+    if errors:
+        decision["execution_state"] = "blocked"
+        decision["reason"] += " (decision invalida: %s)" % "; ".join(errors)
+        _persist_decision(run_dir, decision)
+        return False, decision
+
     # Revalidar state_version antes de ejecutar
-    events = ledger.read(run_dir)
-    current_version = events[-1]["seq"] if events else 0
+    current_version = ledger.last_valid_seq(run_dir)
     if decision["observed_state_version"] != current_version:
         decision["execution_state"] = "blocked"
         decision["reason"] += " (state_version cambiada: %d -> %d)" % (
             decision["observed_state_version"], current_version)
+        _persist_decision(run_dir, decision)
         return False, decision
+
+    # Aprobacion humana: sin un registro LIGADO, no se ejecuta.
+    if decision.get("requires_human_approval") or \
+            decision.get("action_type") in HUMAN_APPROVAL_ACTIONS:
+        approval = _approval_for(run, decision)
+        if approval is None:
+            decision["execution_state"] = "awaiting_approval"
+            decision["reason"] += (" (requiere aprobacion humana registrada y "
+                                   "ligada a esta decision)")
+            _persist_decision(run_dir, decision)
+            return False, decision
+        decision["executed_by"] = "human:%s" % approval.get("approved_by", "human")
 
     # Verificar precondiciones
     for prereq in decision.get("preconditions", []):
@@ -316,21 +523,22 @@ def execute_decision(run_dir, decision, run, session_id=None):
             if not any(g.get("state") == "PASS" for g in gates.values()):
                 decision["execution_state"] = "blocked"
                 decision["reason"] += " (precondicion fallida: gates PASS)"
+                _persist_decision(run_dir, decision)
                 return False, decision
 
     # Marcar como approved
     decision["execution_state"] = "approved"
-    decision["executed_by"] = "E_executor"
+    if decision.get("executed_by") is None:
+        decision["executed_by"] = "E_executor"
     _persist_decision(run_dir, decision)
 
-    # Ejecutar segun action_type
     success = False
     action = decision["action_type"]
-    
+
     try:
         decision["execution_state"] = "executing"
         _persist_decision(run_dir, decision)
-        
+
         if action == "launch_phase":
             success = _exec_launch_phase(run_dir, decision, run, session_id)
         elif action == "request_review":
@@ -344,13 +552,15 @@ def execute_decision(run_dir, decision, run, session_id=None):
         else:
             decision["execution_state"] = "failed"
             decision["reason"] += " (accion no implementada: %s)" % action
+            _persist_decision(run_dir, decision)
             return False, decision
 
         if success:
             decision["execution_state"] = "succeeded"
-        else:
+        elif decision["execution_state"] not in ("delegated", "awaiting_manual_action",
+                                                 "awaiting_evidence"):
             decision["execution_state"] = "failed"
-            
+
     except Exception as exc:  # noqa: BLE001
         decision["execution_state"] = "failed"
         decision["reason"] += " (excepcion: %s)" % exc
@@ -359,114 +569,182 @@ def execute_decision(run_dir, decision, run, session_id=None):
     return success, decision
 
 
-def _persist_decision(run_dir, decision):
-    """Actualiza una decision existente en decisions.jsonl (sobrescribe ultima linea si mismo ID)."""
-    path = os.path.join(run_dir, DECISIONS_FILE)
-    lines = []
-    if os.path.isfile(path):
-        with open(path, encoding="utf-8") as fh:
-            for line in fh:
-                line = line.strip()
-                if line:
-                    try:
-                        d = json.loads(line)
-                        if d.get("decision_id") != decision["decision_id"]:
-                            lines.append(line)
-                    except ValueError:
-                        pass
-    lines.append(json.dumps(decision, ensure_ascii=False))
-    with open(path, "w", encoding="utf-8") as fh:
-        fh.write("\n".join(lines) + "\n")
-    ledger.append(run_dir, "decision", "%s: %s (state=%s)" % (
-        decision["action_type"], decision["reason"], decision["execution_state"]),
-        refs={"decision_id": decision["decision_id"],
-              "action": decision["action_type"],
-              "execution_state": decision["execution_state"]}, actor="E")
-
-
 def _exec_launch_phase(run_dir, decision, run, session_id=None):
-    """Lanza la siguiente fase de trabajo segun el modo."""
+    """Prepara el trabajo siguiente.
+
+    Registrar un job NO es ejecutar trabajo: la decision queda `delegated` o
+    `awaiting_manual_action`, nunca `succeeded`. El job queda PENDING con su
+    briefing escrito en disco: quien lo ejecute (un agente o un operador) debe
+    marcarlo RUNNING/SUCCEEDED con evidencia.
+    """
     mode = run.get("mode")
     if mode == "patch":
-        # En Patch, lanzar jobs de implementacion para candidatos PENDING
         candidates = run.get("candidates", {})
         launched = 0
-        for cid, cand in candidates.items():
-            if cand.get("status") == "PENDING":
-                job_id = "job-%s-%s" % (cid, int(time.time()))
-                _register_job(run_dir, job_id, "implement", [cid],
-                              "implement", budget_calls=1)
-                launched += 1
+        for cid, cand in sorted(candidates.items()):
+            if cand.get("status") != "PENDING":
+                continue
+            job_id = job_id_for(run.get("run_id"), "implement", "implement", [cid])
+            try:
+                job, created = _register_job(run_dir, job_id, "implement", [cid],
+                                             "implement", budget_calls=1)
+            except ForgeError as exc:
+                decision["reason"] += " (%s)" % exc
+                decision["execution_state"] = "blocked"
+                return False
+            if not created:
+                continue  # job ya existente: no se duplica ni se cobra dos veces
+            brief = os.path.join(run_dir, "briefs", "%s.md" % job_id)
+            try:
+                os.makedirs(os.path.dirname(brief), exist_ok=True)
+                with open(brief, "w", encoding="utf-8") as fh:
+                    fh.write("# Brief %s\n\nCandidato: %s\nModo: %s\n\n"
+                             "Implementa la tarea en su workspace y deja el "
+                             "cambio exacto en el directorio del candidato.\n"
+                             % (job_id, cid, mode))
+                job["output_ref"] = os.path.relpath(brief, run_dir)
+            except OSError:
+                pass
+            _update_job(run_dir, job_id, state="AWAITING_MANUAL_ACTION")
+            cand["status"] = "AWAITING_MANUAL_ACTION"
+            launched += 1
         if launched == 0:
-            # No hay jobs pendientes, verificar si pasar a gates
-            decision["reason"] += " (sin jobs pendientes, pasar a gates)"
-        return True
-    
+            decision["execution_state"] = "awaiting_manual_action"
+            decision["reason"] += (" (sin jobs pendientes: el trabajo ya fue "
+                                   "encargado; se requiere ejecucion externa)")
+            return False
+        decision["execution_state"] = "delegated"
+        decision["reason"] += (" (%d jobs encargados; la ejecucion es externa y "
+                               "aun no esta verificada)" % launched)
+        return False
+
     elif mode == "answer":
-        # En Answer, delegar al bracket original (se hace via CLI)
-        decision["reason"] += " (bracket answer: usar cmd_next)"
-        return True
-    
+        decision["execution_state"] = "delegated"
+        decision["reason"] += (" (bracket answer: la olas la lanza el "
+                               "orquestador con `arena_forge.py next`)")
+        return False
+
     return False
 
 
 def _exec_request_review(run_dir, decision, run):
-    """Registra solicitud de revision adversarial para candidatos elegibles."""
+    """Encarga revisiones adversariales para los candidatos elegibles."""
+    created = 0
     for cid in decision.get("target_ids", []):
-        job_id = "review-%s-%s" % (cid, int(time.time()))
-        _register_job(run_dir, job_id, "review", [cid], "review", budget_calls=1)
-    return True
+        job_id = job_id_for(run.get("run_id"), "review", "review", [cid])
+        try:
+            job, was_created = _register_job(run_dir, job_id, "review", [cid],
+                                             "review", budget_calls=1)
+        except ForgeError as exc:
+            decision["reason"] += " (%s)" % exc
+            decision["execution_state"] = "blocked"
+            return False
+        if was_created:
+            created += 1
+    if created == 0:
+        decision["execution_state"] = "delegated"
+        decision["reason"] += " (revisiones ya encargadas; no se duplican)"
+        return False
+    decision["execution_state"] = "delegated"
+    decision["reason"] += (" (%d revisiones encargadas; la ejecucion es externa "
+                           "y aun no esta verificada)" % created)
+    return False
 
 
 def _exec_request_evidence(run_dir, decision, run):
-    """Registra solicitud de evidencia adicional."""
-    # En este momento solo registra el evento; la evidencia se recoge en collect
-    return True
+    """Solicita evidencia adicional.
+
+    NO puede devolver exito: no se ha recogido ninguna evidencia todavia.
+    """
+    decision["execution_state"] = "awaiting_evidence"
+    decision["reason"] += (" (evidencia solicitada; no hay evidencia recogida: "
+                           "no se puede marcar como ejecutada)")
+    return False
 
 
 def _exec_stop(run_dir, decision, run):
-    """Detiene la ejecucion."""
-    run["phase"] = "COMPLETED"
-    run["status"] = "COMPLETED"
-    from .util import save_forge
+    """Detiene la ejecucion respetando la maquina de estados."""
+    cur = run.get("phase") or run.get("status")
+    if cur in state.TERMINAL:
+        decision["reason"] += " (estado terminal %s: no se reabre)" % cur
+        return True
+    try:
+        state.transition(run, "COMPLETED", "decision stop de E")
+    except ForgeError as exc:
+        decision["reason"] += " (transicion no permitida: %s)" % exc
+        decision["execution_state"] = "blocked"
+        return False
     save_forge(run)
     return True
 
 
 def _exec_recommend_no_ship(run_dir, decision, run):
-    """Recomienda NO_SHIP y actualiza estado."""
-    run["phase"] = "NO_SHIP"
-    run["status"] = "NO_SHIP"
-    from .util import save_forge
+    """Marca el run como NO_SHIP respetando la maquina de estados."""
+    cur = run.get("phase") or run.get("status")
+    if cur in state.TERMINAL:
+        decision["reason"] += " (estado terminal %s: no se reabre)" % cur
+        return True
+    try:
+        state.transition(run, "NO_SHIP", "decision recommend_no_ship de E")
+    except ForgeError as exc:
+        decision["reason"] += " (transicion no permitida: %s)" % exc
+        decision["execution_state"] = "blocked"
+        return False
     save_forge(run)
     return True
 
 
 # ------------------------------------------------------------- alta nivel
 def step(run_dir, run):
-    """Un paso del ciclo de control de E: Observe->...->Persist (§4.4).
-    
-    Ahora propone, valida y EJECUTA la decision.
-    """
+    """Un paso del ciclo de control de E: Observe->...->Persist (§4.4)."""
     decision = propose(run_dir, run)
     success, executed = execute_decision(run_dir, decision, run)
     return executed
 
 
 def history(run_dir):
+    """Historial de decisiones: la ULTIMA transicion por decision_id.
+
+    Las lineas corruptas se PRESERVAN en el fichero y se omiten aqui; no se
+    borran ni se reescribe el historico.
+    """
     path = os.path.join(run_dir, DECISIONS_FILE)
     if not os.path.isfile(path):
         return []
-    decisions = []
+    latest = {}
+    order = []
     with open(path, encoding="utf-8") as fh:
         for line in fh:
             line = line.strip()
-            if line:
-                try:
-                    decisions.append(json.loads(line))
-                except ValueError:
-                    pass
-    return decisions
+            if not line:
+                continue
+            try:
+                d = json.loads(line)
+            except ValueError:
+                continue  # linea corrupta: se preserva en disco
+            did = d.get("decision_id")
+            if did not in latest:
+                order.append(did)
+            latest[did] = d
+    return [latest[did] for did in order if did in latest]
+
+
+def corrupt_lines(run_dir):
+    """Lineas corruptas del historico (preservadas, no borradas)."""
+    path = os.path.join(run_dir, DECISIONS_FILE)
+    if not os.path.isfile(path):
+        return []
+    bad = []
+    with open(path, encoding="utf-8") as fh:
+        for i, line in enumerate(fh, 1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                json.loads(line)
+            except ValueError:
+                bad.append({"line": i, "content": line[:200]})
+    return bad
 
 
 # ------------------------------------------------------------- utilidades
@@ -477,13 +755,13 @@ def get_latest_decision(run_dir):
 
 
 def get_pending_jobs(run_dir):
-    """Obtiene jobs en estado PENDING."""
+    """Jobs en estado PENDING."""
     jobs = _load_jobs(run_dir)
     return [j for j in jobs.values() if j.get("state") == "PENDING"]
 
 
 def get_running_jobs(run_dir):
-    """Obtiene jobs en estado RUNNING."""
+    """Jobs en estado RUNNING."""
     jobs = _load_jobs(run_dir)
     return [j for j in jobs.values() if j.get("state") == "RUNNING"]
 
@@ -494,14 +772,51 @@ def mark_job_running(run_dir, job_id, session_ref=None):
 
 
 def mark_job_completed(run_dir, job_id, output_ref=None, success=True):
-    state_val = "DONE" if success else "FAILED"
-    return _update_job(run_dir, job_id, state=state_val, completed_ts=now_ts(),
-                       output_ref=output_ref)
+    """Marca el job como terminado.
+
+    DONE exige evidencia: `output_ref` debe existir, tener tamano valido y su
+    SHA-256 se registra. Sin output verificable el job NO pasa a DONE.
+    """
+    existing = _load_jobs(run_dir).get(job_id)
+    if existing is None:
+        return None
+    if existing.get("state") == "DONE":
+        # Idempotente: completar dos veces el MISMO job no cobra dos veces.
+        return existing
+    if success and not output_ref:
+        return _fail_job(run_dir, job_id, None)
+    if success:
+        path = output_ref
+        if not os.path.isabs(path):
+            path = os.path.join(run_dir, output_ref)
+        if not os.path.isfile(path):
+            return _fail_job(run_dir, job_id, output_ref)
+        try:
+            size = os.path.getsize(path)
+        except OSError:
+            size = 0
+        if size <= 0:
+            return _fail_job(run_dir, job_id, output_ref)
+        from .util import sha_file
+        job = _update_job(run_dir, job_id, state="DONE", completed_ts=now_ts(),
+                          output_ref=output_ref)
+        if job is not None:
+            job["output_sha256"] = sha_file(path)
+            job["output_bytes"] = size
+            _save_jobs(run_dir, _load_jobs(run_dir))
+        commit_budget(run_dir, (job or {}).get("budget_calls", 0))
+        return job
+    return _fail_job(run_dir, job_id, output_ref)
 
 
-def get_budget_remaining(run):
-    """Calcula presupuesto restante en llamadas."""
-    budget = run.get("budget", {})
-    max_calls = budget.get("max_calls", 0)
-    spent = run.get("calls_spent", 0)
-    return max(0, max_calls - spent)
+def _fail_job(run_dir, job_id, output_ref):
+    """Marca el job como FAILED y LIBERA la reserva de presupuesto.
+
+    Sin liberar, la reserva queda huerfana para siempre: el trabajo esta
+    encajonado y el presupuesto quemado.
+    """
+    job = _update_job(run_dir, job_id, state="FAILED", completed_ts=now_ts(),
+                      output_ref=output_ref)
+    if job is not None:
+        release_budget(run_dir, job.get("budget_calls", 0))
+    return job

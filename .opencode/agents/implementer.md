@@ -2,24 +2,27 @@
 description: Implementa un candidato de Arena Forge dentro de su directorio aislado
 mode: subagent
 permissions:
+  # En OpenCode V2 gana la ULTIMA regla que coincide (last-match-wins).
+  # Por tanto: primero las denegaciones amplias, despues las permisos
+  # concretos. Si se invirtieran, las reglas `allow` quedarian muertas.
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: edit
+    resource: ".arena/**"
+    effect: deny
+  - action: shell
+    resource: "*"
+    effect: ask
   - action: read
     resource: "*"
-    effect: allow
-  - action: edit
-    resource: ".arena/scratch/**"
     effect: allow
   - action: edit
     resource: ".arena/candidates/**"
     effect: allow
   - action: edit
-    resource: ".arena/**"
-    effect: deny
-  - action: edit
-    resource: "*"
-    effect: deny
-  - action: shell
-    resource: "*"
-    effect: ask
+    resource: ".arena/scratch/**"
+    effect: allow
 ---
 
 Implementa la tarea de tu brief. Solo puedes escribir dentro de `.arena/`:

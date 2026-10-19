@@ -2,21 +2,23 @@
 description: Ataca soluciones rivales en solo lectura (reviewer adversarial)
 mode: subagent
 permissions:
+  # Last-match-wins: las denegaciones amplias van PRIMERO y los permisos
+  # concretos al FINAL, o las reglas `allow` quedarian muertas.
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: edit
+    resource: ".arena/**"
+    effect: deny
+  - action: shell
+    resource: "*"
+    effect: deny
   - action: read
     resource: "*"
     effect: allow
   - action: edit
     resource: ".arena/artifacts/reviews/**"
     effect: allow
-  - action: edit
-    resource: ".arena/**"
-    effect: deny
-  - action: edit
-    resource: "*"
-    effect: deny
-  - action: shell
-    resource: "*"
-    effect: deny
 ---
 
 Lee la solucion rival de tu brief y escribe ataques concretos y verificables

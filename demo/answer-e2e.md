@@ -1,6 +1,28 @@
-# Arena Forge — informe
+# Arena Forge — E2E Answer Arena
 
-- run: `C:\Users\Marcos\arena-forge\.arena\run-20261016-134741-s7`
+> ⚠️ **NOT_RUN en la auditoría del 2026-10-19.**
+> El E2E de Answer Arena exige **olas de subagentes reales** (una llamada de modelo por
+> job). La auditoría del 2026-10-19 no ejecutó esas llamadas por coste, así que **no hay
+> evidencia fresca** de un bracket completo con 4 candidatos.
+> El informe antiguo que se encuentra abajo es de la versión **v1** del schema (2026-10-16)
+> y **ya no es reproducible**: esos runs viven en `.arena/` (ignorado por git) y el motor
+> actual resuelve esos artefactos como `NO_SHIP` por falta de `isolation.json` y por el
+> schema v2.
+>
+> **Qué sí está probado del flujo Answer** (por unidades, sin modelo):
+> `SchedulerDeterminismTest` — el bracket es determinista con el mismo seed, reparte
+> tarjetas sin repetir y termina en un único ganador para n ∈ {1,2,3,4,5,7,8,13,16,25,100}.
+> `ResumeCancelTest` — `resume` no reescribe `arena.json`; `cancel` congela el run con sus
+> artefactos y bloquea `collect`/`gates`/`report`/`apply`/`decide`.
+> `BudgetTest` — `init` valida los agentes contra el perfil y el perfil `extreme` exige
+> `--confirm`.
+>
+> Para cerrar AF-AC-005 hace falta ejecutar una ola real y **versionar los artefactos**
+> del run (hoy `.arena/` está ignorado por git y no es evidencia reproducible).
+
+## Informe histórico (schema v1, 2026-10-16 — NO reproducible)
+
+- run: `.arena/run-20261016-134741-s7` (artefactos locales, ignorados por git)
 - modo: answer
 - decision: **WINNER** — campeon del bracket answer
 - seed: 7, agentes: 4
@@ -9,15 +31,14 @@
 - cards_sha: `f67f0ad305071cec7fb6162c22820e4f0046f3296dbdf80fbb6c165c87da384d`
 - baseline: `n/a-no-repo`
 
-## Bracket
+### Bracket
 ### ronda 1 (bye: -)
-- r1-m01: a002 vs a004 → **a002** (a002 more clearly depicts automation with midnight unattended runs and green status while a004&#x27;s final line drifts generic.)
-- r1-m02: a001 vs a003 → **a001** (a001 more directly evokes automation guarding a release while a003 rests on a generic calming image.)
+- r1-m01: a002 vs a004 → **a002**
+- r1-m02: a001 vs a003 → **a001**
 ### ronda 2 (bye: -)
-- r2-m01: a002 vs a001 → **a002** (Both haikus meet 5-7-5 with no flaws, but a002 evokes unattended scheduled runs more directly.)
+- r2-m01: a002 vs a001 → **a002**
 
-## Eventos
-
+### Eventos
 - 1792169265 init mode=answer agents=4
 - 1792169324 advance rc=2
 - 1792169604 collect rc=0

@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / py${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dev dependencies
+        run: python -m pip install --upgrade pip && python -m pip install "pytest>=8,<10"
+
+      - name: Unit + integration suite
+        run: python -m pytest tests/ -q
+
+      - name: Suite must not dirty the checkout
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::la suite dejo el arbol de trabajo sucio:"
+            git status --porcelain
+            git --no-pager diff
+            exit 1
+          fi
+
+      - name: Bytecode compile check
+        run: python -m compileall -q arena_forge.py forge tests
+
+      - name: CLI smoke (init + gates + report + apply)
+        shell: bash
+        run: |
+          python arena_forge.py plan --agents 2 --profile quick
+          python arena_forge.py init --mode patch --agents 2 --seed 11 \
+            --task "corregir el denominador en stats.py" \
+            --baseline-dir fixtures/patch-demo/baseline_buggy \
+            --suite fixtures/patch-demo/tests_protected --profile quick
+          RUN=$(cat .arena/LATEST)
+          cp fixtures/patch-demo/candidate_fixed/stats.py "$RUN/candidates/cand-01/stats.py"
+          python arena_forge.py gates --dir "$RUN"
+          python arena_forge.py report --dir "$RUN"
+          python arena_forge.py apply --dir "$RUN" --approve
+          git -c core.autocrlf=false apply --check "reports/$(basename "$RUN").patch"
+          echo "E2E patch: OK"
+
+      - name: CLI smoke (answer arena + NO_SHIP)
+        shell: bash
+        run: |
+          python arena_forge.py init --mode answer --agents 2 --seed 7 \
+            --task "escribir una funcion que calcule el factorial" --profile quick
+          python arena_forge.py state
+          python arena_forge.py ledger --verify

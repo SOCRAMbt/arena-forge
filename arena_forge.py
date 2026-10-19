@@ -29,8 +29,8 @@ import tempfile
 import time
 
 from forge import (adapter, agent_e, benchmark as bench_mod, contracts,
-                   isolation, ledger, report as report_mod, score as score_mod,
-                   state)
+                   integrity, isolation, ledger, report as report_mod,
+                   score as score_mod, state)
 from forge import gates as gate_engine
 from forge.util import (ForgeError, MAX_OUTPUT_BYTES, atomic_write_json,
                         inside, read_json_bounded, redact, sha_file, sha_text,
@@ -113,18 +113,29 @@ def load_forge(d):
     if data.get("version") not in (1, FORGE_VERSION):
         raise ForgeError("forge.json version %r no soportada" % data.get("version"))
     data = _migrate_v1_v2(data, d)
+    # El directorio del run es la AUTORIDAD: el valor almacenado en el
+    # fichero es dato no confiable (un run movido escribiria en la ruta
+    # antigua y resucitaria el directorio original).
+    data["dir"] = os.path.abspath(d)
     return data
 
 
 def log_event(run, kind, detail=""):
-    """Compat: evento tanto en forge.json como en el ledger append-only."""
+    """Evento tanto en forge.json como en el ledger append-only.
+
+    Un fallo de escritura del ledger NO se silencia: se registra en el propio
+    run (`ledger_error`) para que quede evidencia del fallo.
+    """
     run.setdefault("events", []).append(
         {"t": int(time.time()), "kind": kind, "detail": detail})
     save_forge(run)
     try:
         ledger.append(run["dir"], kind, detail)
-    except OSError:
-        pass
+    except OSError as exc:
+        run.setdefault("ledger_errors", []).append(
+            {"t": int(time.time()), "kind": kind, "error": str(exc)})
+        save_forge(run)
+        print("BLOCKED ledger: no se pudo escribir el evento %r: %s" % (kind, exc))
 
 
 def run_dir_from(args):
@@ -273,37 +284,28 @@ def cmd_init(args):
     # Baseline del repo objetivo evaluado
     baseline_dir = getattr(args, "baseline_dir", None)
     target_baseline_commit = "n/a-no-repo"
+    target_baseline_dir = None
     baseline_dirty = False
     baseline_manifest = None
-    
+
     if baseline_dir:
         baseline_dir = os.path.abspath(baseline_dir)
-        # Verificar si es un repo Git
-        try:
-            c = subprocess.run(["git", "-C", baseline_dir, "rev-parse", "HEAD"], 
-                              text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-            if c.returncode == 0:
-                target_baseline_commit = c.stdout.strip()
-                # Verificar dirty state
-                c2 = subprocess.run(["git", "-C", baseline_dir, "status", "--porcelain"],
-                                   text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-                if c2.returncode == 0 and c2.stdout.strip():
-                    baseline_dirty = True
-            else:
-                # No es repo Git o no hay commits - calcular manifiesto de contenido
-                from .isolation import _walk_files
-                files = dict(_walk_files(baseline_dir))
-                parts = []
-                for rel, abspath in sorted(files.items()):
-                    try:
-                        st = os.stat(abspath)
-                        file_sha = sha_file(abspath)
-                        parts.append("%s|%s|%d|%s" % (rel, "file", st.st_size, file_sha))
-                    except OSError:
-                        parts.append("%s|%s|%d|%s" % (rel, "file", 0, "error"))
-                baseline_manifest = sha_text("\n".join(parts)) if parts else None
-        except OSError:
-            pass
+        target_baseline_dir = baseline_dir
+        if not os.path.isdir(baseline_dir):
+            raise ForgeError("baseline-dir inexistente: %s" % baseline_dir)
+        # Un directorio que merelyamente cuelga de un repositorio (p.ej. un
+        # fixture dentro del propio repo de Arena Forge) NO es su propio
+        # baseline Git: usar el commit de ese repositorio seria incorrecto.
+        if integrity.is_own_git_repo(baseline_dir):
+            head = integrity.git_head(baseline_dir)
+            if head:
+                target_baseline_commit = head
+            dirty = integrity.git_dirty(baseline_dir)
+            if dirty:
+                baseline_dirty = True
+        # Manifiesto de contenido: se calcula SIEMPRE (Git o no), con el mismo
+        # algoritmo versionado, para que apply pueda revalidarlo despues.
+        baseline_manifest = integrity.baseline_manifest(baseline_dir)
     
     # Para compatibilidad, baseline_commit apunta al target si existe, sino forge
     baseline_commit = target_baseline_commit if target_baseline_commit != "n/a-no-repo" else forge_repo_commit
@@ -321,13 +323,15 @@ def cmd_init(args):
         "baseline_ref": baseline_commit,
         "forge_repo_commit": forge_repo_commit,
         "target_baseline_commit": target_baseline_commit,
+        "target_baseline_dir": target_baseline_dir,
         "baseline_dirty": baseline_dirty,
         "baseline_manifest": baseline_manifest,
+        "baseline_manifest_version": integrity.BASELINE_MANIFEST_VERSION,
         "scope": getattr(args, "scope", None) or "no declarado",
         "non_goals": getattr(args, "non_goals", None) or "no declarados",
         "policy_version": POLICY_VERSION, "budget": agent_e.budget_for(profile),
-        "calls_spent": 0, "candidates": {}, "approvals": [], "not_run": [],
-        "created": int(time.time()), "events": [],
+        "calls_spent": 0, "calls_reserved": 0, "candidates": {}, "approvals": [],
+        "not_run": [], "created": int(time.time()), "events": [],
     }
     save_forge(run)
     ledger.append(d, "init", "mode=%s agents=%d profile=%s"
@@ -353,32 +357,29 @@ def _prepare_patch(run, d, args):
         if existing:
             ids = existing
     proof = isolation.ensure_workspaces(d, ids)
-    # baseline copia local para diffs controlados (P0-04: recursivo)
+    # baseline copia local para diffs controlados (P0-04: recursivo).
+    # Se usa la MISMA politica de exclusiones que el manifiesto y el parche
+    # (`isolation._copy_tree`): si no, el `.git` del baseline (historial,
+    # config, hooks) acabaria en el workspace de cada candidato, invisible al
+    # manifiesto y al parche.
     src = os.path.abspath(baseline_dir) if baseline_dir else None
     if src and os.path.isdir(src):
         bdir = os.path.join(d, "baseline")
-        os.makedirs(bdir, exist_ok=True)
-        for name in os.listdir(src):
-            s = os.path.join(src, name)
-            if os.path.isfile(s):
-                shutil.copy2(s, os.path.join(bdir, name))
-            elif os.path.isdir(s):
-                shutil.copytree(s, os.path.join(bdir, name),
-                                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        isolation._copy_tree(src, bdir)
     # Cada candidato arranca desde el mismo baseline (P0-04: recursivo).
     for cid in ids:
         cdir = os.path.join(d, "candidates", cid)
         if src and os.path.isdir(src):
-            for name in os.listdir(src):
-                s = os.path.join(src, name)
-                if os.path.isfile(s) and not name.lower().endswith((".pyc",)):
-                    shutil.copy2(s, os.path.join(cdir, name))
-                elif os.path.isdir(s):
-                    shutil.copytree(s, os.path.join(cdir, name),
-                                    ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            isolation._copy_tree(src, cdir)
     atomic_write_json(os.path.join(d, "isolation.json"), proof)
     ledger.append(d, "isolation", "candidates=%d ok=%s" % (len(ids), proof["ok"]),
                   refs={"proof": "isolation.json"})
+    # Manifiesto de la COPIA CONGELADA del baseline: es el arbol contra el que
+    # los gates calculan el diff. Se revalida antes de report y de apply.
+    bdir = os.path.join(d, "baseline")
+    if os.path.isdir(bdir):
+        run["frozen_baseline_manifest"] = integrity.baseline_manifest(bdir)
+        run["frozen_baseline_manifest_version"] = integrity.BASELINE_MANIFEST_VERSION
     run["candidates"] = {cid: {"candidate_id": cid, "run_id": run["run_id"],
                                "strategy_id": None, "prompt_hash": None,
                                "baseline_hash": run.get("baseline_commit"),
@@ -465,6 +466,7 @@ def _verify_isolation(d, run):
 def cmd_gates(args):
     d = run_dir_from(args)
     run = load_forge(d)
+    guard_mutable(run)
     if not run.get("suite"):
         raise ForgeError("esta ejecucion no tiene suite (modo answer o init sin --suite)")
     if run.get("mode") == "patch":
@@ -570,49 +572,119 @@ def cmd_cancel(args):
 
 
 # ============================================================ report / apply
-def resolve_patch_winner(d, run, gates):
-    """Compat + contrato: (candidate|None, reason). Acepta 'state' o 'verdict'."""
-    def _pass(g):
-        return (g.get("state") or g.get("verdict")) == "PASS"
-    eligible = sorted(c for c, g in gates.items() if _pass(g))
-    if not eligible:
-        return None, "ningun candidato supera los gates obligatorios"
-    pj = _load(os.path.join(d, "patch_judge.json"))
-    if not pj or pj.get("_malformed"):
-        if not gates:
-            return None, "sin gates ejecutados"
-        return None, ("%d elegibles sin desempate ciego; el score no puede elegir "
-                      "solo" % len(eligible))
-    label_map = {"X": None, "Y": None}
-    label_map.update(_load(os.path.join(d, "patch_map.json")) or {})
-    if not label_map.get("X") and len(eligible) >= 1:
-        label_map["X"] = eligible[0]
-    if not label_map.get("Y") and len(eligible) >= 2:
-        label_map["Y"] = eligible[1]
-    cand = label_map.get(str(pj.get("winner", "")).upper())
-    if cand and cand in eligible:
-        return cand, ("gates PASS + juez ciego: %s" % (pj.get("reason") or ""))
-    return None, "veredicto ciego invalido o inelegible"
+def _decision_id(run, decision, reason, winner, eligible, gates):
+    """Identificador de decision ligado al CONTENIDO, no a un contador.
+
+    Dos decisiones sobre estados distintos producen identificadores distintos;
+    la misma decision sobre el mismo estado produce el mismo id. `apply` lo
+    recalcula y lo compara con el persistido: si el estado cambio entre
+    `report` y `apply`, los ids NO coinciden y la aplicacion se bloquea.
+    """
+    payload = {
+        "run_id": run.get("run_id"),
+        "decision": decision,
+        "reason": reason,
+        "winner_id": winner,
+        "eligible": sorted(eligible or []),
+        "suite_sha": run.get("suite_sha"),
+        "diff_sha": (gates.get(winner) or {}).get("diff_sha") if winner else None,
+        "candidate_manifest_sha": ((gates.get(winner) or {}).get("candidate_manifest_sha")
+                                   if winner else None),
+    }
+    return "dec-%s-%s" % (run.get("run_id"), sha_text(json.dumps(
+        payload, sort_keys=True, ensure_ascii=False))[:16])
+
+
+def cmd_judge_record(args):
+    """Registra el veredicto CIEGO del juez (X/Y) para el modo patch.
+
+    El mapa X/Y se fija la PRIMERA vez (orden determinista de los elegibles) y
+    se reutiliza después: el juez ve etiquetas, nunca identificadores de
+    candidato. Con un solo elegible no hace falta juez (la decisión por gates
+    es determinista) y el comando lo rechaza.
+    """
+    d = run_dir_from(args)
+    run = load_forge(d)
+    guard_mutable(run)
+    if run.get("mode") != "patch":
+        raise ForgeError("el juez ciego solo aplica al modo patch")
+    winner = str(args.winner or "").strip().upper()
+    if winner not in ("X", "Y"):
+        raise ForgeError("el ganador debe ser X o Y (nunca un id de candidato)")
+    if not args.reason:
+        raise ForgeError("el veredicto exige una razon")
+    evidence = [e for e in (args.evidence or []) if str(e).strip()]
+    if not evidence:
+        raise ForgeError("el veredicto exige al menos una evidencia "
+                         "(un veredicto sin evidencia se invalida)")
+    data = report_mod.gather(d)
+    gates = data.get("gates") or {}
+    eligible = sorted(c for c, g in gates.items() if g.get("state") == "PASS")
+    if len(eligible) < 2:
+        raise ForgeError("hacen falta 2 candidatos elegibles para un desempate "
+                         "ciego (hay %d)" % len(eligible))
+    map_path = os.path.join(d, "patch_map.json")
+    label_map = _load(map_path) or {}
+    if not label_map.get("X") or not label_map.get("Y"):
+        label_map = {"X": eligible[0], "Y": eligible[1]}
+        atomic_write_json(map_path, label_map)
+    verdict = {"winner": winner, "reason": args.reason, "evidence": evidence}
+    atomic_write_json(os.path.join(d, "patch_judge.json"), verdict)
+    ledger.append(d, "judge", "veredicto ciego %s" % winner,
+                  refs={"winner": winner, "map": "patch_map.json"},
+                  actor=("human" if getattr(args, "by", None) == "human" else "judge"))
+    print("veredicto ciego registrado: %s" % winner)
+    print("mapa ciego: X<->%s Y<->%s (no se revela al juez)"
+          % (label_map["X"], label_map["Y"]))
+    print("ejecuta `report` para resolver la decision")
+    return 0
 
 
 def cmd_report(args):
     d = run_dir_from(args)
     run = load_forge(d)
+    guard_mutable(run)
     data = report_mod.gather(d)
     data["candidates"] = run.get("candidates", {})
-    decision, reason, eligible = report_mod.resolve(d, data)
-    out = report_mod.write(d, REPORTS_DIR, data=data, decision=decision)
+    decision, reason, eligible, winner = report_mod.resolve_full(d, data)
+    gates = data.get("gates") or {}
+    record = {
+        "decision_id": _decision_id(run, decision, reason, winner, eligible, gates),
+        "decision": decision,
+        "reason": reason,
+        "winner_id": winner,
+        "eligible": eligible,
+        "suite_sha": run.get("suite_sha"),
+        "diff_sha": (gates.get(winner) or {}).get("diff_sha") if winner else None,
+        "candidate_manifest_sha": (gates.get(winner) or {}).get("candidate_manifest_sha")
+                                  if winner else None,
+        "ts": int(time.time()),
+        "forge_repo_commit": run.get("forge_repo_commit"),
+        "security_mode": isolation.SECURITY_MODE,
+    }
+    run["last_decision"] = record
+    save_forge(run)
+    atomic_write_json(os.path.join(d, "decision.json"), record)
     if decision in ("WINNER", "NO_SHIP") and run.get("phase") not in TERMINAL:
         try:
+            if run.get("phase") in ("EVALUATING", "RUNNING", "COLLECTING"):
+                _set_phase(run, "DECIDING", "decision tomada")
             _set_phase(run, "REPORTING", "informe generado")
             _set_phase(run, "COMPLETED" if decision == "WINNER" else "NO_SHIP",
                        decision)
-        except ForgeError:
-            pass
+        except ForgeError as exc:
+            ledger.append(d, "transition_rejected", str(exc))
+    # El informe se escribe DESPUES de las transiciones: si no, el artefacto
+    # persistido muestra la fase previa a la decision y se contradice con
+    # `forge.json`.
+    out = report_mod.write(d, REPORTS_DIR, data=data, decision=decision)
     ledger.append(d, "decision", "%s: %s" % (decision, reason),
-                  refs={"decision": decision})
+                  refs={"decision": decision, "winner": winner,
+                        "decision_id": record["decision_id"]})
     print("decision: %s (%s)" % (decision, reason))
     print("elegibles: %s" % (eligible or "-"))
+    print("ganador: %s" % (winner or "-"))
+    print("decision_id: %s" % record["decision_id"])
     print("md: %s\nhtml: %s" % (out["md"], out["html"]))
     return 0
 
@@ -620,60 +692,114 @@ def cmd_report(args):
 def cmd_apply(args):
     d = run_dir_from(args)
     run = load_forge(d)
+    guard_mutable(run)
     if not args.approve:
         raise ForgeError("rehusado: exige --approve explicito y aplica a mano. "
                          "Nada del proyecto fue modificado.")
-    # P0-04: verificar baseline objetivo sin cambios (siempre, antes de exportar)
-    target_baseline = run.get("target_baseline_commit")
-    target_baseline_dir = run.get("target_baseline_dir")
-    if target_baseline and target_baseline != "n/a-no-repo" and target_baseline_dir:
-        try:
-            cur = subprocess.run(["git", "-C", target_baseline_dir, "rev-parse", "HEAD"],
-                                 text=True, stdout=subprocess.PIPE,
-                                 stderr=subprocess.DEVNULL).stdout.strip()
-            if cur and cur != target_baseline:
-                raise ForgeError("baseline objetivo cambio (%s != %s); revisa antes de aplicar"
-                                 % (cur, target_baseline))
-            # Verificar dirty state si aplica
-            dirty = subprocess.run(["git", "-C", target_baseline_dir, "status", "--porcelain"],
-                                   text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL).stdout.strip()
-            if dirty:
-                raise ForgeError("baseline objetivo tiene cambios sin commit; exportar bloqueado")
-        except OSError:
-            raise ForgeError("no se pudo verificar baseline objetivo: %s" % target_baseline_dir)
-    elif run.get("baseline_manifest"):
-        # Fixture sin Git: comparar manifiesto
-        pass  # TODO: implementar comparación de manifiesto
-    # P1-03: usar el mismo motor de decision que report (report_mod.resolve)
+    if run.get("mode") != "patch":
+        raise ForgeError("apply solo aplica ejecuciones en modo patch")
+    # P0-04: revalidar el baseline objetivo ANTES de exportar (siempre).
+    ok, reason = integrity.verify_baseline(run)
+    if not ok:
+        raise ForgeError("baseline objetivo no verificable: %s" % reason)
+    # P0-02: revalidar la suite VIVA y la copia congelada del baseline.
+    ok, reason, _sha = integrity.recompute_suite_sha(run)
+    if not ok:
+        raise ForgeError("suite no verificable: %s" % reason)
+    ok, reason = integrity.verify_frozen_baseline(run)
+    if not ok:
+        raise ForgeError("baseline congelado no verificable: %s" % reason)
+    # P1-03: usar el MISMO motor de decision que report (report_mod.resolve_full)
     data = report_mod.gather(d)
     data["candidates"] = run.get("candidates", {})
-    decision, reason, eligible = report_mod.resolve(d, data)
-    if decision != "WINNER" or not eligible:
-        raise ForgeError("sin campeon: decision=%s, elegibles=%s" % (decision, eligible))
-    champ = eligible[0]  # report.resolve ya valida y devuelve un solo ganador
+    decision, reason, eligible, winner = report_mod.resolve_full(
+        d, data, ignore_terminal=True)
+    if decision != "WINNER" or not winner:
+        raise ForgeError("sin campeon: decision=%s, ganador=%s" % (decision, winner))
+    # La decision persistida por `report` es OBLIGATORIA: `apply` no puede
+    # re-derivar por su cuenta (eso era lo que permitia aplicar un candidato
+    # distinto del juzgado).
+    last = run.get("last_decision") or {}
+    if not last:
+        raise ForgeError("no hay decision persistida en este run: ejecuta "
+                         "`report` antes de `apply`")
+    if not os.path.isfile(os.path.join(d, "decision.json")):
+        raise ForgeError("falta decision.json: ejecuta `report` antes de `apply`")
+    if last.get("decision") != decision:
+        raise ForgeError("la decision persistida (%s) no coincide con la "
+                         "re-derivada (%s): re-ejecuta report"
+                         % (last.get("decision"), decision))
+    if last.get("winner_id") and last.get("winner_id") != winner:
+        raise ForgeError("el ganador persistido (%s) no coincide con el "
+                         "re-derivado (%s): re-ejecuta report"
+                         % (last.get("winner_id"), winner))
+    # El `decision_id` esta ligado al CONTENIDO: si el estado cambio entre
+    # `report` y `apply`, los ids no coinciden y se bloquea.
+    expected_id = _decision_id(run, decision, reason, winner, eligible,
+                               data.get("gates") or {})
+    if last.get("decision_id") != expected_id:
+        raise ForgeError("el contenido de la decision cambio entre report y "
+                         "apply (decision_id persistido=%s, recalculado=%s): "
+                         "re-ejecuta report"
+                         % (last.get("decision_id"), expected_id))
+    # Se aplica el GANADOR persistido, nunca `eligible[0]`.
+    champ = last.get("winner_id") or winner
     cdir = os.path.join(d, "candidates", champ)
     base = os.path.join(d, "baseline")
-    patch_lines = []
-    if os.path.isdir(cdir) and os.path.isdir(base):
-        patch_lines = [isolation.capture_diff(base, cdir)]
-    elif os.path.isdir(cdir):
-        for name in sorted(os.listdir(cdir)):
-            p = os.path.join(cdir, name)
-            if os.path.isfile(p):
-                with open(p, encoding="utf-8", errors="replace") as fh:
-                    patch_lines.append("--- /dev/null\n+++ b/%s\n%s" % (name, fh.read()))
+    if not os.path.isdir(cdir) or not os.path.isdir(base):
+        raise ForgeError("no se puede exportar: falta el candidato %s o el "
+                         "baseline congelado" % champ)
+    patch_bytes = isolation.capture_diff(base, cdir)
+    # P0-02: verificar que los bytes exportados SON el diff evaluado y que
+    # reproducen el arbol del candidato.
+    ok, reason = integrity.verify_exported_artifact(d, run, data["gates"],
+                                                     champ, patch_bytes)
+    if not ok:
+        raise ForgeError("el parche no supero la verificacion de artefacto: %s" % reason)
     out = os.path.join(REPORTS_DIR, os.path.basename(d) + ".patch")
     os.makedirs(REPORTS_DIR, exist_ok=True)
-    with open(out, "w", encoding="utf-8") as fh:
-        fh.write("".join(patch_lines) or "# sin diffs (modo answer)\n")
+    # Escritura atomica: tmp + rename. El parche son BYTES (puede contener
+    # contenido que no es UTF-8 valido).
+    tmp = out + ".tmp"
+    with open(tmp, "wb") as fh:
+        fh.write(patch_bytes)
+        fh.flush()
+        os.fsync(fh.fileno())
+    os.replace(tmp, out)
+    exported_sha = integrity.artifact_hashes(out)
+    gates = data["gates"]
     ledger.append(d, "apply", "parche preparado (sin mutar el proyecto)",
-                  refs={"patch": os.path.relpath(out, HERE)}, actor="human")
+                  refs={"patch": os.path.relpath(out, HERE),
+                        "patch_sha256": exported_sha,
+                        "winner": champ,
+                        "diff_sha": (gates.get(champ) or {}).get("diff_sha"),
+                        "security_mode": isolation.SECURITY_MODE}, actor="human")
     print("parche preparado (SOLO archivo, proyecto intacto): %s" % out)
-    print("revisa, luego: git apply --check %s" % out)
+    print("ganador aplicado: %s (decision persistida: %s)"
+          % (champ, (last or {}).get("decision_id") or "(no persistida)"))
+    print("sha256 del parche exportado: %s" % exported_sha)
+    print("modo de seguridad: %s" % isolation.SECURITY_MODE)
+    print("revisa, luego aplica EXACTAMENTE con (core.autocrlf=false es "
+          "obligatorio: con el valor de Windows el parche reescribe LF->CRLF y "
+          "el resultado deja de coincidir byte a byte con lo evaluado):")
+    print("  git -c core.autocrlf=false -c core.eol=lf apply --check %s" % out)
+    target_root = integrity.git_toplevel(run.get("target_baseline_dir") or "") \
+        if run.get("target_baseline_dir") else None
+    base_dir = run.get("target_baseline_dir")
+    if base_dir and target_root and os.path.realpath(target_root) != os.path.realpath(base_dir):
+        rel = os.path.relpath(os.path.realpath(base_dir), os.path.realpath(target_root))
+        print("  (desde la raiz del repo objetivo; el baseline esta en %s)" % rel)
+        print("  git -c core.autocrlf=false -c core.eol=lf apply --directory=%s --check %s"
+              % (rel.replace("\\", "/"), out))
+    elif base_dir:
+        print("  (desde el directorio del baseline: %s)" % base_dir)
     return 0
+
+
 def cmd_decide(args):
     d = run_dir_from(args)
     run = load_forge(d)
+    guard_mutable(run)
     decision = agent_e.step(d, run)
     print("E decision: %s -> %s (riesgo %s, state=%s)"
           % (decision["action_type"], decision["reason"],
@@ -731,17 +857,6 @@ def cmd_ledger(args):
     return 0
 
 
-def cmd_decide(args):
-    d = run_dir_from(args)
-    run = load_forge(d)
-    decision = agent_e.step(d, run)
-    print("E decision: %s -> %s (riesgo %s)"
-          % (decision["action_type"], decision["reason"], decision["risk_level"]))
-    print("cost_estimate: %s | presupuesto restante (calls): %s"
-          % (decision["cost_estimate"], decision["budget_remaining"]))
-    return 0
-
-
 def cmd_decisions(args):
     d = run_dir_from(args)
     for dec in agent_e.history(d):
@@ -769,42 +884,82 @@ def cmd_isolation(args):
 def cmd_verify(args):
     d = run_dir_from(args) if (args.dir or os.path.isfile(os.path.join(ROOT, LATEST))) else None
     checks = []
-
-    # adapter
-    caps = adapter.load_capabilities()
-    verified = adapter.summary(caps).get("verified", 0)
-    checks.append(("adapter: capacidades verificadas=%d" % verified, verified > 0))
-
+    mode = "answer"
+    run = None
     if d:
-        run = load_forge(d)
+        try:
+            run = load_forge(d)
+            mode = run.get("mode", "answer")
+        except ForgeError as exc:
+            checks.append(("Run contract: no se pudo cargar (%s)" % exc, False))
+
+    # Capacidades obligatorias POR MODO. No basta con que alguna este verificada.
+    caps = adapter.load_capabilities()
+    mandatory, optional = adapter.mode_requirements(mode)
+    missing = adapter.missing_mandatory(caps, mode)
+    checks.append(("adapter modo=%s: obligatorias verificadas=%d/%d%s"
+                   % (mode, len(mandatory) - len(missing), len(mandatory),
+                      (" (faltan: %s)" % ", ".join(missing)) if missing else ""),
+                   not missing))
+    # Sin run que verificar, `verify` no puede certificar nada: falla.
+    checks.append(("run resuelto para verificar", bool(d)))
+
+    if d and run is not None:
         # contratos
         errs = contracts.validate_run(run)
         checks.append(("Run contract: %s" % ("OK" if not errs else errs), not errs))
         # ledger
         ok, problems = ledger.verify(d)
         checks.append(("ledger append-only: %s" % ("OK" if ok else problems), ok))
-        # suite integrity
-        suite = run.get("suite")
-        if suite and gate_engine.suite_files(suite):
-            same = gate_engine.suite_sha(suite) == run.get("suite_sha")
-            checks.append(("suite sha sin cambios", same))
-        elif suite and not os.path.exists(suite):
-            checks.append(("suite: NOT_RUN (ausente)", False))
+        # suite: se RECALCULA, no se compara con el valor guardado
+        if run.get("suite"):
+            ok, reason, _sha = integrity.recompute_suite_sha(run)
+            checks.append(("suite sha recalculado: %s" % reason, ok))
+            checks.append(("suite fuera de workspaces candidatos: %s"
+                           % integrity.suite_outside_candidates(run),
+                           integrity.suite_outside_candidates(run)))
         else:
-            checks.append(("suite: NOT_RUN (sin suite)", False))
+            checks.append(("suite: NOT_RUN (sin suite declarada)", False))
+        # baseline: revalidado
+        ok, reason = integrity.verify_baseline(run)
+        checks.append(("baseline objetivo: %s" % reason, ok))
+        ok, reason = integrity.verify_frozen_baseline(run)
+        checks.append(("baseline congelado: %s" % reason, ok))
         # aislamiento
         if run.get("mode") == "patch":
             proof = _load(os.path.join(d, "isolation.json")) or {}
             checks.append(("aislamiento: ok=%s" % proof.get("ok"), bool(proof.get("ok"))))
         # gates -> decision coherente
         data = report_mod.gather(d)
-        decision, reason, _ = report_mod.resolve(d, data)
+        decision, reason, _eligible, winner = report_mod.resolve_full(
+            d, data, ignore_terminal=True)
         gates = data["gates"]
-        if run.get("mode") == "patch" and gates:
-            any_pass = any((g.get("state") or g.get("verdict")) == "PASS"
-                           for g in gates.values())
-            checks.append(("gates preceden al score: decision=%s" % decision,
-                           (decision == "WINNER") == any_pass))
+        if run.get("mode") == "patch":
+            # Un run de patch SIN gates evaluados no puede estar bien: se
+            # bloquea en vez de declarar OK.
+            checks.append(("gates evaluados: %d" % len(gates), bool(gates)))
+            if gates:
+                any_pass = any((g.get("state") or g.get("verdict")) == "PASS"
+                               for g in gates.values())
+                # La coherencia es: si hay algun PASS, la decision no puede ser
+                # NO_SHIP por falta de gates; y si no hay ninguno, no puede
+                # ser WINNER.
+                coherent = ((decision == "WINNER") if any_pass
+                            else (decision != "WINNER"))
+                checks.append(("gates preceden al score: decision=%s (%s)"
+                               % (decision, reason), coherent))
+                if decision == "WINNER":
+                    # Se comprueba el ganador PERSISTIDO, no el re-derivado: si
+                    # `report` no se ejecuto, la comprobacion falla.
+                    last = run.get("last_decision") or {}
+                    persisted = last.get("winner_id")
+                    checks.append(("decision persistida: decision=%s winner=%s id=%s"
+                                   % (last.get("decision"), persisted,
+                                      last.get("decision_id")),
+                                   bool(persisted) and persisted == winner
+                                   and last.get("decision") == decision))
+        checks.append(("modo de seguridad: %s" % isolation.SECURITY_MODE,
+                       isolation.SECURITY_MODE == "TRUSTED_CODE_ONLY"))
     ok_all = all(c[1] for c in checks)
     print("verify: %s" % ("OK" if ok_all else "PROBLEMAS"))
     for msg, ok in checks:
@@ -918,6 +1073,14 @@ def build_parser():
     s = sub.add_parser("report", help="informe Markdown + HTML estatico")
     s.add_argument("--dir")
     s.set_defaults(func=cmd_report)
+
+    s = sub.add_parser("judge", help="registrar el veredicto ciego X/Y (patch)")
+    s.add_argument("--dir")
+    s.add_argument("--winner", required=True, help="X o Y (nunca un id de candidato)")
+    s.add_argument("--reason", default="")
+    s.add_argument("--evidence", action="append", default=[])
+    s.add_argument("--by", default="judge", choices=("judge", "human"))
+    s.set_defaults(func=cmd_judge_record)
 
     s = sub.add_parser("apply", help="preparar parche (exige --approve)")
     s.add_argument("--dir"); s.add_argument("--approve", action="store_true")

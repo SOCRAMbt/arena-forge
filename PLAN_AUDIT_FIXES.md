@@ -1,19 +1,29 @@
-# Plan de corrección — Auditoría Arena Forge contra especificación integral
+﻿# Plan de correcciÃ³n â€” AuditorÃ­a Arena Forge contra especificaciÃ³n integral
 
-**Fecha:** 18 de octubre de 2026  
-**Repositorio:** C:\Users\Marcos\arena-forge  
-**Commit base:** 185cfea (Arena Forge v1.0)  
-**Auditoría base:** `ARENA_FORGE_AUDITORIA_CONTRA_ESPECIFICACION_2026-10-18.md`
+> âš ï¸ **DOCUMENTO HISTÃ“RICO â€” PLAN SUPERADO.**
+> Este plan se escribiÃ³ el 2026-10-18 y su "matriz de aceptaciÃ³n final (objetivo: todo
+> PASS)" es un **objetivo**, no un resultado: varias filas marcaban PASS para cosas que
+> no existÃ­an (CI, skill cargable, sandbox). **La matriz real, con los estados
+> sustentados por evidencia ejecutada, estÃ¡ en
+> [`reports/audit/acceptance-matrix.md`](../reports/audit/acceptance-matrix.md)**.
+> La auditorÃ­a del 2026-10-19 (`reports/audit/final-audit.md`) **NO** declara COMPLETE:
+> hay 2 P0 abiertos (sin frontera de OS; contrato funcional ausente) y 2 criterios
+> NOT_RUN. No uses las tablas de este fichero como estado actual.
+
+**Fecha:** 18 de octubre de 2026
+**Repositorio:** <HOME>\arena-forge
+**Commit base:** 185cfea (Arena Forge v1.0)
+**AuditorÃ­a base:** `ARENA_FORGE_AUDITORIA_CONTRA_ESPECIFICACION_2026-10-18.md`
 
 ---
 
 ## Objetivo
 
-Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2 (calidad) para que el proyecto cumpla con **todos** los criterios AF-AC-001..018 de la especificación técnica integral y pueda declararse **COMPLETE** con evidencia real, no simulada.
+Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2 (calidad) para que el proyecto cumpla con **todos** los criterios AF-AC-001..018 de la especificaciÃ³n tÃ©cnica integral y pueda declararse **COMPLETE** con evidencia real, no simulada.
 
 ---
 
-## Fase 0 — Inspección y baseline reproducible ✅ COMPLETADA
+## Fase 0 â€” InspecciÃ³n y baseline reproducible âœ… COMPLETADA
 
 - [x] Versiones confirmadas: Python 3.12.4, pytest 9.1.1, git 2.51.0, OpenCode v2.0.32
 - [x] Repositorio limpio salvo cambios en `runtime/benchmark.json` y `runtime/capabilities.json`
@@ -22,19 +32,19 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 
 ---
 
-## P0 — Bloqueantes de integridad y seguridad
+## P0 â€” Bloqueantes de integridad y seguridad
 
-### P0-01: Aislamiento como precondición real (no `True` incondicional)
+### P0-01: Aislamiento como precondiciÃ³n real (no `True` incondicional)
 
 **Archivos a modificar:**
-- `arena_forge.py` → `cmd_gates()` línea 395
-- `forge/report.py` → `resolve()`
-- `forge/gates.py` → `run_all()` / `run_gate()`
+- `arena_forge.py` â†’ `cmd_gates()` lÃ­nea 395
+- `forge/report.py` â†’ `resolve()`
+- `forge/gates.py` â†’ `run_all()` / `run_gate()`
 
 **Cambios:**
 1. Eliminar `cand["isolation_verified"] = True` incondicional en `cmd_gates`
 2. En `cmd_gates`: cargar `isolation.json`, validar `ok == true` y rutas reales ANTES de ejecutar gates
-3. Si falta/incorrecto → `BLOCKED` para ese candidato, no ejecutar suite
+3. Si falta/incorrecto â†’ `BLOCKED` para ese candidato, no ejecutar suite
 4. `report.resolve()` debe rechazar `WINNER` si aislamiento obligatorio no verificado
 5. `apply` debe rechazar si aislamiento no verificado
 
@@ -46,17 +56,17 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 
 ---
 
-### P0-02: Ejecución de código candidato con aislamiento real o BLOQUEADO
+### P0-02: EjecuciÃ³n de cÃ³digo candidato con aislamiento real o BLOQUEADO
 
 **Archivos a modificar:**
-- `forge/gates.py` → `run_gate()`
+- `forge/gates.py` â†’ `run_gate()`
 
 **Cambios:**
-1. No heredar `os.environ` completo → construir `env` mínimo allowlist (PATH, PYTHONPATH=scratch, TEMP, TMP, HOME/USERPROFILE mínimo)
+1. No heredar `os.environ` completo â†’ construir `env` mÃ­nimo allowlist (PATH, PYTHONPATH=scratch, TEMP, TMP, HOME/USERPROFILE mÃ­nimo)
 2. Eliminar `sitecustomize.py`, `usercustomize.py`, plugins pytest del candidato del PYTHONPATH
 3. Desactivar autoload de plugins: `-p no:cacheprovider -p no:faulthandler` + variables `PYTHONDONTWRITEBYTECODE=1`
-4. **Si no hay sandbox de SO demostrable** (Windows: Job Objects, AppContainer, o contenedor): marcar modo Patch como `BLOCKED` para ejecución de código no confiable; ofrecer modo `DIFF_ONLY` claramente limitado
-5. Documentar en `THREAT_MODEL.md` y `README.md` qué protege y qué no
+4. **Si no hay sandbox de SO demostrable** (Windows: Job Objects, AppContainer, o contenedor): marcar modo Patch como `BLOCKED` para ejecuciÃ³n de cÃ³digo no confiable; ofrecer modo `DIFF_ONLY` claramente limitado
+5. Documentar en `THREAT_MODEL.md` y `README.md` quÃ© protege y quÃ© no
 
 **Tests nuevos:**
 - `test_gate_env_no_secrets_leaked`
@@ -67,19 +77,19 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 
 ---
 
-### P0-03: Suite de evaluación congelada y validada contra hash de init
+### P0-03: Suite de evaluaciÃ³n congelada y validada contra hash de init
 
 **Archivos a modificar:**
-- `forge/gates.py` → `run_gate()`, `run_all()` — aceptar `expected_suite_sha`
-- `arena_forge.py` → `cmd_gates()` — pasar `run["suite_sha"]`
-- `forge/report.py` → `resolve()` — validar integridad de suite como requisito para `WINNER`
-- `arena_forge.py` → `cmd_verify()` — comprobar suite hash congelado
+- `forge/gates.py` â†’ `run_gate()`, `run_all()` â€” aceptar `expected_suite_sha`
+- `arena_forge.py` â†’ `cmd_gates()` â€” pasar `run["suite_sha"]`
+- `forge/report.py` â†’ `resolve()` â€” validar integridad de suite como requisito para `WINNER`
+- `arena_forge.py` â†’ `cmd_verify()` â€” comprobar suite hash congelado
 
 **Cambios:**
 1. `run_gate(expected_suite_sha=None)` valida `suite_before == expected_suite_sha` ANTES de ejecutar
-2. Valida `suite_after == expected_suite_sha` DESPUÉS
+2. Valida `suite_after == expected_suite_sha` DESPUÃ‰S
 3. Todos los candidatos deben tener el mismo `expected_suite_sha` (el de `run`)
-4. Cualquier divergencia → `BLOCKED` para ese candidato + `NO_SHIP` global
+4. Cualquier divergencia â†’ `BLOCKED` para ese candidato + `NO_SHIP` global
 5. `report.resolve()` devuelve `NO_SHIP` si `gates` tienen integridad de suite comprometida
 
 **Tests nuevos:**
@@ -90,18 +100,18 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 
 ---
 
-### P0-04: Baseline, snapshots, diffs y aplicación recursivos
+### P0-04: Baseline, snapshots, diffs y aplicaciÃ³n recursivos
 
 **Archivos a modificar:**
-- `arena_forge.py` → `_prepare_patch()`, `capture_diff()`, `apply_diff_to_temp()`, `cmd_apply()`
-- `forge/isolation.py` → `ensure_workspaces()` (ya usa copytree recursivo, verificar)
+- `arena_forge.py` â†’ `_prepare_patch()`, `capture_diff()`, `apply_diff_to_temp()`, `cmd_apply()`
+- `forge/isolation.py` â†’ `ensure_workspaces()` (ya usa copytree recursivo, verificar)
 
 **Cambios:**
-1. `_prepare_patch()`: copiar recursivamente `baseline_dir` → `candidates/<id>/` (preservar estructura completa)
+1. `_prepare_patch()`: copiar recursivamente `baseline_dir` â†’ `candidates/<id>/` (preservar estructura completa)
 2. `capture_diff()`: comparar recursivamente `baseline/` vs `candidates/<id>/` (archivos nuevos, modificados, eliminados, renombrados)
-3. `cmd_apply()`: generar patch válido para `git apply --check` en checkout limpio
-4. Requerir baseline válido (`--baseline-dir` con repo Git o snapshot versionado) antes de `READY` en Patch
-5. Si no hay baseline → no crear candidato Patch `READY`, bloquear
+3. `cmd_apply()`: generar patch vÃ¡lido para `git apply --check` en checkout limpio
+4. Requerir baseline vÃ¡lido (`--baseline-dir` con repo Git o snapshot versionado) antes de `READY` en Patch
+5. Si no hay baseline â†’ no crear candidato Patch `READY`, bloquear
 
 **Tests nuevos:**
 - `test_patch_recursive_baseline_copy`
@@ -114,19 +124,19 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 ### P0-05: E como orquestador real con estados honestos
 
 **Archivos a modificar:**
-- `forge/agent_e.py` → separar `EPolicyEngine` (decisiones) de lógica de ejecución
-- `arena_forge.py` → `cmd_decide()`, nuevo dispatcher de acciones
-- Nueva skill/agente para ejecución si OpenCode lo soporta
+- `forge/agent_e.py` â†’ separar `EPolicyEngine` (decisiones) de lÃ³gica de ejecuciÃ³n
+- `arena_forge.py` â†’ `cmd_decide()`, nuevo dispatcher de acciones
+- Nueva skill/agente para ejecuciÃ³n si OpenCode lo soporta
 
 **Cambios:**
-1. Renombrar `step()` → `propose()` (solo propone, no ejecuta)
-2. Estados de decisión: `PROPOSED` → `APPROVED` → `EXECUTING` → `SUCCEEDED|FAILED|BLOCKED|CANCELLED`
+1. Renombrar `step()` â†’ `propose()` (solo propone, no ejecuta)
+2. Estados de decisiÃ³n: `PROPOSED` â†’ `APPROVED` â†’ `EXECUTING` â†’ `SUCCEEDED|FAILED|BLOCKED|CANCELLED`
 3. `cmd_decide()` valida precondiciones, presupuesto, state_version ANTES de aprobar
-4. Si acción = `launch_phase`: crear jobs reales en `forge.json` y registrar en ledger
-5. Si acción = `request_review`/`request_evidence`: crear jobs de review y persistir
-6. Si acción = `stop`/`recommend_no_ship`: transicionar fase a `DECIDING`
+4. Si acciÃ³n = `launch_phase`: crear jobs reales en `forge.json` y registrar en ledger
+5. Si acciÃ³n = `request_review`/`request_evidence`: crear jobs de review y persistir
+6. Si acciÃ³n = `stop`/`recommend_no_ship`: transicionar fase a `DECIDING`
 7. **Nunca** marcar `accepted` sin ejecutar; registrar `executed_by`, `session_id`, `output_ref`
-8. Revalidar `observed_state_version` al ejecutar; rechazar si cambió
+8. Revalidar `observed_state_version` al ejecutar; rechazar si cambiÃ³
 
 **Tests nuevos:**
 - `test_e_propose_launch_phase_creates_jobs`
@@ -141,14 +151,14 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 ### P0-06: Presupuestos aplicados antes de inicializar
 
 **Archivos a modificar:**
-- `arena_forge.py` → `cmd_init()`, `cmd_plan()`, `agent_e.budget_for()`
-- `forge/agent_e.py` → `budget_for()`
+- `arena_forge.py` â†’ `cmd_init()`, `cmd_plan()`, `agent_e.budget_for()`
+- `forge/agent_e.py` â†’ `budget_for()`
 
 **Cambios:**
-1. Default Answer: 4 agentes (no 100) para `quick`/`standard`; 100 solo explícito
+1. Default Answer: 4 agentes (no 100) para `quick`/`standard`; 100 solo explÃ­cito
 2. `cmd_init()` valida `agents <= budget.max_candidates` del perfil; rechaza si excede
 3. `cmd_plan()` muestra presupuesto exacto del perfil y rechaza si `--agents` excede
-4. `extreme`: exige `--confirm` + muestra plan detallado (jobs, olas, llamadas, tiempo, límites)
+4. `extreme`: exige `--confirm` + muestra plan detallado (jobs, olas, llamadas, tiempo, lÃ­mites)
 5. Una sola fuente de verdad: `agent_e.BUDGET_PROFILES` usado por `plan`, `init`, `agent_e`
 
 **Tests nuevos:**
@@ -159,23 +169,23 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 
 ---
 
-## P1 — Brechas funcionales importantes
+## P1 â€” Brechas funcionales importantes
 
 ### P1-01: Separar workflows Answer y Patch
 
 **Archivos a modificar:**
-- `arena_forge.py` → `cmd_next()`, `cmd_resume()`, `cmd_collect()`, `cmd_advance()`, `cmd_report()`, `cmd_cancel()`
+- `arena_forge.py` â†’ `cmd_next()`, `cmd_resume()`, `cmd_collect()`, `cmd_advance()`, `cmd_report()`, `cmd_cancel()`
 
 **Cambios:**
 1. Dispatcher por `run.get("mode")`:
    - `answer`: usa `vendor/arena-skill/bracket.py` (existente)
    - `patch`: jobs propios (implement, review, gates, judge, decide, export)
 2. `cmd_resume()` para Patch: reconstruye jobs Patch desde ledger/registro, NO llama `bracket next`
-3. IDs consistentes: `cand-XX` desde `init` → prompts → outputs → gates → judge → report
+3. IDs consistentes: `cand-XX` desde `init` â†’ prompts â†’ outputs â†’ gates â†’ judge â†’ report
 
 ---
 
-### P1-02: Permisos de agentes por mínimo privilegio
+### P1-02: Permisos de agentes por mÃ­nimo privilegio
 
 **Archivos a modificar:**
 - `.opencode/agents/implementer.md`
@@ -187,8 +197,8 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 1. `implementer`: `edit` solo en `.arena/candidates/<su_candidato>/**` y `.arena/scratch/<su_candidato>/**`
 2. `reviewer`: `edit` solo en `.arena/artifacts/reviews/<su_review>.md` (output propio)
 3. `judge`: `edit` solo en `.arena/artifacts/verdicts/<su_veredicto>.json`
-4. `scout`: `read` en todo, `edit`/`shell` deny (ya está bien)
-5. Runtime (CLI) es el único que escribe `forge.json`, `ledger.jsonl`, `gates.json`, `suite`, `patch_map.json`, `decisions.jsonl`
+4. `scout`: `read` en todo, `edit`/`shell` deny (ya estÃ¡ bien)
+5. Runtime (CLI) es el Ãºnico que escribe `forge.json`, `ledger.jsonl`, `gates.json`, `suite`, `patch_map.json`, `decisions.jsonl`
 
 **Tests nuevos:**
 - `test_implementer_cant_write_other_candidate`
@@ -198,20 +208,20 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 
 ---
 
-### P1-03: Un solo motor de decisión autoritativo
+### P1-03: Un solo motor de decisiÃ³n autoritativo
 
 **Archivos a modificar:**
-- `forge/report.py` → `resolve()` (motor único)
-- `forge/score.py` → `evaluate_patch_judgement()` (usado por resolve)
-- `arena_forge.py` → `resolve_patch_winner()` → DELEGAR a `report.resolve()`
-- `arena_forge.py` → `cmd_apply()` → DELEGAR a `report.resolve()`
+- `forge/report.py` â†’ `resolve()` (motor Ãºnico)
+- `forge/score.py` â†’ `evaluate_patch_judgement()` (usado por resolve)
+- `arena_forge.py` â†’ `resolve_patch_winner()` â†’ DELEGAR a `report.resolve()`
+- `arena_forge.py` â†’ `cmd_apply()` â†’ DELEGAR a `report.resolve()`
 
 **Cambios:**
-1. `report.resolve()` = única fuente de verdad para `WINNER/NO_SHIP`
+1. `report.resolve()` = Ãºnica fuente de verdad para `WINNER/NO_SHIP`
 2. `patch_map.json` obligatorio, por match, versionado, aleatorizado reproducible (seed)
-3. Sin fallback silencioso a orden alfabético
+3. Sin fallback silencioso a orden alfabÃ©tico
 4. Validar schema completo del veredicto: todas las dimensiones requeridas, rangos 0-10, referencias a artefactos existentes
-5. `apply` y `report` usan exactamente la misma decisión persistida
+5. `apply` y `report` usan exactamente la misma decisiÃ³n persistida
 
 **Tests nuevos:**
 - `test_report_and_apply_same_decision`
@@ -224,54 +234,54 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 ### P1-04: Probe de capacidades OpenCode veraz y vigente
 
 **Archivos a modificar:**
-- `forge/adapter.py` → `probe()`, `load_capabilities()`
-- `docs/RECONNAISSANCE.md` (regenerar desde ejecución real)
+- `forge/adapter.py` â†’ `probe()`, `load_capabilities()`
+- `docs/RECONNAISSANCE.md` (regenerar desde ejecuciÃ³n real)
 - `runtime/capabilities.json` (regenerar)
 
 **Cambios:**
 1. `probe()` ejecuta prueba real por capacidad:
-   - `skill_load`: `opencode skill load arena-forge` → exit code
-   - `subagent_tool`: `opencode run --prompt "subagent test"` → verifica llamada real
+   - `skill_load`: `opencode skill load arena-forge` â†’ exit code
+   - `subagent_tool`: `opencode run --prompt "subagent test"` â†’ verifica llamada real
    - `readonly_agent`: invoca agente `explore` y verifica que no puede editar
-   - `cwd_control`: subagent con `cwd` explícito y verifica aislamiento
+   - `cwd_control`: subagent con `cwd` explÃ­cito y verifica aislamiento
    - `permission_rules`: crea agente con permisos y prueba allow/deny
-2. Guardar: versión, timestamp, comando, exit code, stdout/stderr, evidencia
-3. `UNKNOWN` si no se probó; `UNSUPPORTED` si se probó y falló
-4. `verify` exige TODAS las capacidades requeridas para el modo (no solo ≥1)
+2. Guardar: versiÃ³n, timestamp, comando, exit code, stdout/stderr, evidencia
+3. `UNKNOWN` si no se probÃ³; `UNSUPPORTED` si se probÃ³ y fallÃ³
+4. `verify` exige TODAS las capacidades requeridas para el modo (no solo â‰¥1)
 
 ---
 
 ### P1-05: Benchmark real del valor de E
 
 **Archivos a modificar:**
-- `forge/benchmark.py` → separar `benchmark_scheduler_gates()` de `benchmark_compare_methods()`
+- `forge/benchmark.py` â†’ separar `benchmark_scheduler_gates()` de `benchmark_compare_methods()`
 - Nuevo: `fixtures/benchmark/` con dataset versionado
 
 **Cambios:**
-1. Mantener benchmark de scheduler/gates (determinista, rápido)
-2. Añadir `benchmark_compare_methods()` que ejecuta tareas reales comparando:
-   - `single_agent` (agente único bien instruido)
+1. Mantener benchmark de scheduler/gates (determinista, rÃ¡pido)
+2. AÃ±adir `benchmark_compare_methods()` que ejecuta tareas reales comparando:
+   - `single_agent` (agente Ãºnico bien instruido)
    - `fixed_orchestration` (policy fija)
    - `arena_e_adaptive` (E adaptativo)
 3. Dataset: `small/`, `medium/`, `adversarial/` con gold/buggy + suite protegida
-4. Métricas: acceptance_rate, escaped_defects, regressions, cost_calls, duration, rounds_changed_decision, human_review_effort
+4. MÃ©tricas: acceptance_rate, escaped_defects, regressions, cost_calls, duration, rounds_changed_decision, human_review_effort
 5. Repetir por seeds; guardar todos los outputs
-6. Si no se puede ejecutar en CI/sesión → `NOT_RUN` explícito con razón y pasos pendientes
+6. Si no se puede ejecutar en CI/sesiÃ³n â†’ `NOT_RUN` explÃ­cito con razÃ³n y pasos pendientes
 
 ---
 
-### P1-06: Ledger, concurrencia y recuperación
+### P1-06: Ledger, concurrencia y recuperaciÃ³n
 
 **Archivos a modificar:**
-- `forge/ledger.py` → `log_event()`, `verify()`, `read()`
-- `arena_forge.py` → locks unificados para TODAS las mutaciones
+- `forge/ledger.py` â†’ `log_event()`, `verify()`, `read()`
+- `arena_forge.py` â†’ locks unificados para TODAS las mutaciones
 
 **Cambios:**
 1. Hash chain: cada evento incluye `prev_hash` + `content_hash`; `verify()` valida cadena
-2. No suprimir excepciones de escritura → si falla persistencia, bloquear avance
+2. No suprimir excepciones de escritura â†’ si falla persistencia, bloquear avance
 3. Lock unificado (`lock.json` + `fcntl`/`msvcrt` o archivo lock) para TODAS las mutaciones: gates, resume, report, cancel, decide, collect, advance
 4. Job registry en `forge.json`: `jobs: {job_id: {phase, session_id, status, output_ref, attempts, timeout, pid, cancelable}}`
-5. `cancel`: marca jobs `RUNNING` → `CANCELLED`; si sesión OpenCode no cancelable → registra `logical_only` + riesgo
+5. `cancel`: marca jobs `RUNNING` â†’ `CANCELLED`; si sesiÃ³n OpenCode no cancelable â†’ registra `logical_only` + riesgo
 
 ---
 
@@ -306,20 +316,20 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 ### P1-08: Resume y cancel con control real de jobs
 
 **Archivos a modificar:**
-- `arena_forge.py` → `cmd_resume()`, `cmd_cancel()`, job registry
+- `arena_forge.py` â†’ `cmd_resume()`, `cmd_cancel()`, job registry
 
 **Cambios:**
 1. Job registry en `forge.json` con estado por job
-2. `resume` reconcilia: `PENDING`→re-lanzar, `RUNNING`→verificar sesión, `DONE`→saltar, `FAILED`→reintentar según política
-3. `cancel`: transiciona jobs `RUNNING` a `CANCELLED`; si sesión OpenCode no terminable → registra `logical_only` + PID si disponible
+2. `resume` reconcilia: `PENDING`â†’re-lanzar, `RUNNING`â†’verificar sesiÃ³n, `DONE`â†’saltar, `FAILED`â†’reintentar segÃºn polÃ­tica
+3. `cancel`: transiciona jobs `RUNNING` a `CANCELLED`; si sesiÃ³n OpenCode no terminable â†’ registra `logical_only` + PID si disponible
 
 ---
 
 ### P1-09: Baseline de demos reales (no `n/a-no-repo`)
 
 **Archivos a modificar:**
-- `fixtures/patch-demo/` → convertir a repo Git real con commit
-- `demo/patch-e2e.md`, `demo/no-ship.md` → regenerar desde nueva implementación
+- `fixtures/patch-demo/` â†’ convertir a repo Git real con commit
+- `demo/patch-e2e.md`, `demo/no-ship.md` â†’ regenerar desde nueva implementaciÃ³n
 
 **Cambios:**
 1. `fixtures/patch-demo/` = repo Git con `src/`, `tests/`, commit conocido
@@ -328,20 +338,20 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 
 ---
 
-## P2 — Calidad de producto y documentación
+## P2 â€” Calidad de producto y documentaciÃ³n
 
-### P2-01: Privacidad rutas locales en informes públicos
+### P2-01: Privacidad rutas locales en informes pÃºblicos
 
 **Archivos a modificar:**
-- `forge/report.py` → `render_markdown()`, `render_html()` → reemplazar rutas absolutas con `<checkout-root>`
+- `forge/report.py` â†’ `render_markdown()`, `render_html()` â†’ reemplazar rutas absolutas con `<checkout-root>`
 - Regenerar `demo/*.md`, `reports/*.md`, `docs/RECONNAISSANCE.md`
 
 ---
 
-### P2-02: Semántica de `apply` → `export-patch`
+### P2-02: SemÃ¡ntica de `apply` â†’ `export-patch`
 
 **Archivos a modificar:**
-- `arena_forge.py` → renombrar comando `apply` a `export-patch` (mantener alias `apply` con warning)
+- `arena_forge.py` â†’ renombrar comando `apply` a `export-patch` (mantener alias `apply` con warning)
 - `README.md`, `SKILL.md`, docs
 
 ---
@@ -349,7 +359,7 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 ### P2-03: Exit codes y JSON outputs claros
 
 **Archivos a modificar:**
-- `arena_forge.py` → todos los comandos: exit code 0 = comando OK, 1 = error runtime, 2 = validación falló
+- `arena_forge.py` â†’ todos los comandos: exit code 0 = comando OK, 1 = error runtime, 2 = validaciÃ³n fallÃ³
 - Gates: `state` en JSON separa `command_status` de `gate_state`
 
 ---
@@ -362,42 +372,42 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 
 ---
 
-### P2-05: Comandos copy/paste válidos Windows/POSIX
+### P2-05: Comandos copy/paste vÃ¡lidos Windows/POSIX
 
 **Archivos a modificar:**
-- `README.md` → separar comentarios de comandos, usar `::` solo en batch, `#` en shell
+- `README.md` â†’ separar comentarios de comandos, usar `::` solo en batch, `#` en shell
 
 ---
 
-## Matriz de aceptación final (objetivo: todo PASS)
+## Matriz de aceptaciÃ³n final (objetivo: todo PASS)
 
 | ID | Criterio | Estado objetivo | Evidencia requerida |
 |----|----------|-----------------|---------------------|
 | AF-AC-001 | Reconocimiento | PASS | `docs/RECONNAISSANCE.md` fresco + `runtime/capabilities.json` coincidente |
 | AF-AC-002 | Upstream | PASS | `THIRD_PARTY_NOTICES.md` hashes verificados |
-| AF-AC-003 | Skill V2 | PASS | Skill carga + invocación TUI verificada |
+| AF-AC-003 | Skill V2 | PASS | Skill carga + invocaciÃ³n TUI verificada |
 | AF-AC-004 | CLI | PASS | Todos comandos funcionan con datos reales, dispatch Answer/Patch |
 | AF-AC-005 | Answer E2E | PASS | 4 agentes, bracket, artefacts, reporte |
 | AF-AC-006 | Patch E2E | PASS | Repo Git anidado, baseline real, patch aplicable, WINNER/NO_SHIP |
 | AF-AC-007 | Gates preceden score | PASS | Hash suite congelado validado, aislamiento requerido, judge no anula |
 | AF-AC-008 | NO_SHIP | PASS | Demo + test automatizado |
-| AF-AC-009 | Reanudación | PASS | Resume Patch reconcilia jobs sin duplicar |
+| AF-AC-009 | ReanudaciÃ³n | PASS | Resume Patch reconcilia jobs sin duplicar |
 | AF-AC-010 | Seguridad | PASS | Sandbox real O modo BLOCKED documentado + tests adversariales |
-| AF-AC-011 | Informe | PASS | Decisión única, hashes, evidencia, límites, riesgos |
+| AF-AC-011 | Informe | PASS | DecisiÃ³n Ãºnica, hashes, evidencia, lÃ­mites, riesgos |
 | AF-AC-012 | Tests/CI | PASS | 35+ tests + CI + NOT_RUN declarado |
-| AF-AC-013 | Protección repo | PASS | Export-patch only, baseline intacto, diffs recursivos |
+| AF-AC-013 | ProtecciÃ³n repo | PASS | Export-patch only, baseline intacto, diffs recursivos |
 | AF-AC-014 | Checkout limpio | PASS | Documentado y verificado manualmente |
-| AF-AC-015 | E bajo control | PASS | Presupuestos, permisos, gates, sin auto-ejecución |
-| AF-AC-016 | Valor E adaptativo | NOT_RUN (explícito) | Benchmark comparativo O declarado NOT_RUN con razón |
-| AF-AC-017 | Decisión auditable | PASS | Ledger hash chain + decisions.jsonl + refs |
-| AF-AC-018 | Sin éxito ficticio | PASS | No verified/True sin comprobación real |
+| AF-AC-015 | E bajo control | PASS | Presupuestos, permisos, gates, sin auto-ejecuciÃ³n |
+| AF-AC-016 | Valor E adaptativo | NOT_RUN (explÃ­cito) | Benchmark comparativo O declarado NOT_RUN con razÃ³n |
+| AF-AC-017 | DecisiÃ³n auditable | PASS | Ledger hash chain + decisions.jsonl + refs |
+| AF-AC-018 | Sin Ã©xito ficticio | PASS | No verified/True sin comprobaciÃ³n real |
 
 ---
 
-## Orden de ejecución recomendado
+## Orden de ejecuciÃ³n recomendado
 
 ### Semana 1: P0 (integridad/seguridad)
-1. P0-01 Aislamiento precondición real
+1. P0-01 Aislamiento precondiciÃ³n real
 2. P0-03 Suite hash congelado validado
 3. P0-06 Presupuestos aplicados
 4. P0-04 Baseline/diff recursivo
@@ -406,8 +416,8 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 
 ### Semana 2: P1 (flujos/decisiones)
 7. P1-01 Workflows Answer/Patch separados
-8. P1-02 Permisos mínimo privilegio
-9. P1-03 Motor decisión único
+8. P1-02 Permisos mÃ­nimo privilegio
+9. P1-03 Motor decisiÃ³n Ãºnico
 9. P1-04 Probe veraz
 10. P1-06 Ledger hash chain + locks
 11. P1-08 Resume/cancel jobs reales
@@ -422,15 +432,15 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 
 ## Criterios de salida para "LISTO"
 
-- [ ] Todos los P0 tienen tests automatizados que fallaban antes y pasan después
-- [ ] `report.resolve()` es motor único; `apply` y `report` decisión idéntica
+- [ ] Todos los P0 tienen tests automatizados que fallaban antes y pasan despuÃ©s
+- [ ] `report.resolve()` es motor Ãºnico; `apply` y `report` decisiÃ³n idÃ©ntica
 - [ ] Suite hash congelado validado en gates, report, verify, apply
-- [ ] Aislamiento real demostrado O Patch ejecutable = BLOCKED explícito
+- [ ] Aislamiento real demostrado O Patch ejecutable = BLOCKED explÃ­cito
 - [ ] Baseline/diff/apply recursivos en repo Git anidado
-- [ ] E propone + ejecuta (o boundary explícito documentado)
+- [ ] E propone + ejecuta (o boundary explÃ­cito documentado)
 - [ ] Presupuestos aplicados en plan/init
 - [ ] Answer E2E, Patch E2E, NO_SHIP, resume, cancel, tests adversariales corren con artefactos frescos
-- [ ] Benchmark comparativo ejecutado O AF-AC-016 = NOT_RUN explícito
+- [ ] Benchmark comparativo ejecutado O AF-AC-016 = NOT_RUN explÃ­cito
 - [ ] Otra persona reproduce desde checkout limpio siguiendo README
 
 ---
@@ -442,9 +452,9 @@ Cerrar **todas** las brechas P0 (bloqueantes), P1 (funcionales importantes) y P2
 3. Comandos exactos, versiones, exit codes, resumen pruebas
 4. Resultados E2E Answer, Patch, NO_SHIP, seguridad, resume, cancel
 5. Evidencia baseline original intacto
-6. Resultados benchmark + límites estadísticos
+6. Resultados benchmark + lÃ­mites estadÃ­sticos
 7. Capacidades OpenCode verificadas/no verificadas
 8. Riesgos residuales + motivo concreto
-9. Decisión general: COMPLETE / PARTIAL / BLOCKED / FAILED
+9. DecisiÃ³n general: COMPLETE / PARTIAL / BLOCKED / FAILED
 
-**NO** cambiar definiciones para obtener PASS. **NO** ocultar fallos. **NO** decir que test pasó sin ejecutarlo. **NO** presentar sintético como general.
+**NO** cambiar definiciones para obtener PASS. **NO** ocultar fallos. **NO** decir que test pasÃ³ sin ejecutarlo. **NO** presentar sintÃ©tico como general.

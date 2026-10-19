@@ -6,179 +6,107 @@ propio (capacidad `subagent_worktree` = unknown en el adapter), Patch Arena usa
 la ALTERNATIVA SEGURA de la especificacion:
 
   1. cada candidato escribe solo en `candidates/<id>/`;
-  2. sus cambios se capturan como diff unificado versionado;
-  3. un ejecutor controlado aplica el diff a una COPIA temporal del baseline;
+  2. sus cambios se capturan como parche Git canonico versionado;
+  3. un ejecutor controlado aplica el parche a una COPIA temporal del baseline;
   4. los gates corren alli, no en el arbol real.
 
 Nada del proyecto principal se modifica.
+
+FORMATO DEL ARTEFACTO (unico y canonico)
+-----------------------------------------
+El parche es un **parche Git real** (`git diff --binary`). No existe un "formato
+base64 propio": el contenido binario viaja con la codificacion literal/delta
+que Git entiende, de modo que `git apply --check` lo valida y `git apply` lo
+aplica sin reinterpretacion.
+
+El artefacto se manipula como **bytes**, nunca como texto: un parche puede
+contener bytes que no son UTF-8 valido y una conversion a `str` los
+corromperia en silencio. Todo el pipeline (generar -> hashear -> decidir ->
+exportar -> aplicar) opera sobre los MISMOS bytes.
+
+SEGURIDAD DEL ENTORNO DE EJECUCION
+-----------------------------------
+`SECURITY_MODE = "TRUSTED_CODE_ONLY"`: este runtime no ofrece una frontera de
+sistema operativo (sin usuario de minimos privilegios, sin filesystem
+restringido, sin red bloqueada). Un directorio temporal con `cwd` y variables
+filtradas NO es un sandbox. El codigo de los gates lo declara explicitamente.
 """
-import difflib
 import os
+import re
 import shutil
+import subprocess
 import tempfile
 
-from .util import (ForgeError, assert_inside, inside, sha_file, sha_text)
+from .util import (ForgeError, assert_inside, inside, sha_bytes, sha_file,
+                   sha_text)
+
+# Modo de ejecucion efectivo. Ver docs/THREAT_MODEL.md.
+SECURITY_MODE = "TRUSTED_CODE_ONLY"
+
+# Version del algoritmo de manifiesto. Cambiarlo invalida los manifiestos
+# antiguos (fail-closed), que es el comportamiento correcto.
+MANIFEST_VERSION = "manifest-v2"
+
+# Politica de exclusiones: identica para el manifiesto y para el staging de Git,
+# de modo que el parche y el manifiesto describen EXACTAMENTE el mismo conjunto
+# de ficheros.
+EXCLUDED_DIRS = (".git", "__pycache__", ".pytest_cache", ".mypy_cache",
+                 ".ruff_cache")
+EXCLUDED_SUFFIXES = (".pyc", ".pyo")
+
+GIT_TIMEOUT_S = 120
 
 
+# ------------------------------------------------------------------ rutas
 def candidates_root(run_dir):
     return assert_inside(run_dir, os.path.join(run_dir, "candidates"), "candidates")
 
 
+SAFE_ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
 def ensure_workspaces(run_dir, candidate_ids):
-    """Crea un directorio propio por candidato y devuelve la prueba de aislamiento."""
+    """Crea un directorio propio por candidato y devuelve la prueba de aislamiento.
+
+    El identificador se VALIDA ANTES de crear nada: un id con separadores o
+    `..` no puede crear un directorio fuera del run, ni siquiera para
+    "luego detectarlo".
+    """
     root = candidates_root(run_dir)
     os.makedirs(root, exist_ok=True)
     proof = {"root": os.path.relpath(root, run_dir), "candidates": {}, "shared": False,
              "ok": True, "problems": []}
     seen = {}
     for cid in candidate_ids:
+        if not isinstance(cid, str) or not SAFE_ID_RE.match(cid) or cid in (".", ".."):
+            proof["problems"].append("id de candidato no seguro: %r" % (cid,))
+            proof["ok"] = False
+            continue
         cdir = os.path.join(root, cid)
-        os.makedirs(cdir, exist_ok=True)
         real = os.path.realpath(cdir)
+        if not inside(run_dir, real):
+            # Se comprueba ANTES de crear: no se crea nada fuera del run.
+            proof["problems"].append("candidato fuera del run: %s" % real)
+            proof["ok"] = False
+            continue
+        os.makedirs(cdir, exist_ok=True)
         if real in seen:
             proof["problems"].append("dos candidatos comparten ruta: %s" % real)
             proof["shared"] = True
             proof["ok"] = False
         seen[real] = cid
-        if not inside(run_dir, real):
-            proof["problems"].append("candidato fuera del run: %s" % real)
-            proof["ok"] = False
         proof["candidates"][cid] = {"dir": os.path.relpath(cdir, run_dir),
                                     "realpath": real}
     return proof
 
 
-def _walk_files(root):
-    """Genera (relpath, abspath) para todos los ficheros bajo root (recursivo)."""
-    if not os.path.isdir(root):
-        return
-    for dirpath, dirnames, filenames in os.walk(root):
-        # Skip only specific cache directories, not all hidden dirs
-        dirnames[:] = sorted(d for d in dirnames 
-                            if d not in (".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"))
-        for fname in sorted(filenames):
-            if fname.endswith((".pyc",)):
-                continue
-            ap = os.path.join(dirpath, fname)
-            # Verificar symlinks inseguros
-            if os.path.islink(ap):
-                if not _is_safe_symlink(root, ap):
-                    continue  # Saltar symlinks inseguros
-            rel = os.path.relpath(ap, root)
-            yield rel.replace("\\", "/"), ap
+# ------------------------------------------------------------- recorrido
+def _excluded_dir(name):
+    return name in EXCLUDED_DIRS
 
 
-def _binary_diff_line(p_old, p_new, rel_full):
-    """Genera un diff estilo git para archivos binarios con contenido base64."""
-    import base64
-    old_sha = sha_file(p_old) if os.path.isfile(p_old) else None
-    new_sha = sha_file(p_new) if os.path.isfile(p_new) else None
-    
-    lines = []
-    lines.append("diff --git a/%s b/%s" % (rel_full, rel_full))
-    lines.append("index %s..%s 100644" % (old_sha[:7] if old_sha else "0000000", new_sha[:7] if new_sha else "0000000"))
-    
-    if os.path.isfile(p_new):
-        # Leer y codificar en base64 el contenido del archivo nuevo
-        with open(p_new, "rb") as f:
-            content = f.read()
-        b64_content = base64.b64encode(content).decode("ascii")
-        # Formato similar a git binary patch
-        lines.append("GIT binary patch")
-        lines.append("literal %d" % len(content))
-        # Dividir en lineas de max 76 chars (formato base64 estandar)
-        for i in range(0, len(b64_content), 76):
-            lines.append(b64_content[i:i+76])
-    else:
-        # Archivo eliminado
-        lines.append("deleted file mode 100644")
-    
-    return "\n".join(lines) + "\n"
-
-
-def capture_diff(baseline_dir, candidate_dir, name_hint=""):
-    """Diff unificado recursivo de los ficheros del candidato respecto al baseline."""
-    chunks = []
-    if not os.path.isdir(candidate_dir):
-        return ""
-    
-    # Recopilar archivos del baseline
-    baseline_files = dict(_walk_files(baseline_dir))
-    candidate_files = dict(_walk_files(candidate_dir))
-    
-    all_paths = sorted(set(baseline_files.keys()) | set(candidate_files.keys()))
-    
-    for rel in all_paths:
-        p_old = baseline_files.get(rel)
-        p_new = candidate_files.get(rel)
-        
-        if p_old and p_new:
-            # Archivo modificado
-            old_is_binary = _is_binary_file(p_old)
-            new_is_binary = _is_binary_file(p_new)
-            
-            if old_is_binary or new_is_binary:
-                # Archivo binario: usar formato git binary diff
-                rel_full = os.path.join(name_hint, rel) if name_hint else rel
-                chunks.append(_binary_diff_line(p_old, p_new, rel_full))
-            else:
-                # Archivo de texto: diff unificado normal
-                old = _lines(p_old)
-                new = _lines(p_new)
-                if old != new:
-                    rel_full = os.path.join(name_hint, rel) if name_hint else rel
-                    chunks.append("".join(difflib.unified_diff(
-                        old, new, "a/" + rel_full, "b/" + rel_full)))
-        elif p_new and not p_old:
-            # Archivo nuevo
-            new_is_binary = _is_binary_file(p_new)
-            if new_is_binary:
-                rel_full = os.path.join(name_hint, rel) if name_hint else rel
-                chunks.append(_binary_diff_line("/dev/null", p_new, rel_full))
-            else:
-                new = _lines(p_new)
-                old = []
-                rel_full = os.path.join(name_hint, rel) if name_hint else rel
-                chunks.append("".join(difflib.unified_diff(
-                    old, new, "/dev/null", "b/" + rel_full)))
-        elif p_old and not p_new:
-            # Archivo eliminado
-            old_is_binary = _is_binary_file(p_old)
-            if old_is_binary:
-                rel_full = os.path.join(name_hint, rel) if name_hint else rel
-                chunks.append(_binary_diff_line(p_old, "/dev/null", rel_full))
-            else:
-                old = _lines(p_old)
-                new = []
-                rel_full = os.path.join(name_hint, rel) if name_hint else rel
-                chunks.append("".join(difflib.unified_diff(
-                    old, new, "a/" + rel_full, "/dev/null")))
-    return "".join(chunks)
-
-
-def _is_binary_file(path):
-    """Detecta si un archivo es binario."""
-    try:
-        with open(path, "rb") as fh:
-            chunk = fh.read(8192)
-            if b"\x00" in chunk:
-                return True
-            # Heurística: si más del 30% son caracteres no imprimibles, es binario
-            non_printable = sum(1 for b in chunk if b < 32 and b not in (9, 10, 13))
-            if len(chunk) > 0 and non_printable / len(chunk) > 0.3:
-                return True
-    except OSError:
-        pass
-    return False
-
-
-def _lines(path):
-    if os.path.isfile(path):
-        if _is_binary_file(path):
-            return ["[BINARY FILE]\n"]
-        with open(path, encoding="utf-8", errors="replace") as fh:
-            return fh.readlines()
-    return []
+def _excluded_file(name):
+    return name.endswith(EXCLUDED_SUFFIXES)
 
 
 def _is_safe_symlink(root, path):
@@ -193,154 +121,447 @@ def _is_safe_symlink(root, path):
         return False
 
 
-def diff_sha(diff_text):
-    return sha_text(diff_text)
+def walk_files_checked(root):
+    """Devuelve (ficheros, problemas) sin ocultar ficheros peligrosos.
+
+    `ficheros` es una lista de (relpath_normalizado, abspath) ordenada.
+    `problemas` enumera symlinks no permitidos, symlinks rotos y fallos de
+    lectura. Un `problemas` no vacio significa que la operacion DEBE fallar
+    (fail-closed): nunca se omite en silencio el fichero.
+    """
+    problems = []
+    files = []
+    if not os.path.isdir(root):
+        return [], ["raiz inexistente: %s" % root]
+    root_real = os.path.realpath(root)
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        # Los symlinks a directorio aparecen en dirnames; se comprueban aparte.
+        real_dirs = []
+        for d in sorted(dirnames):
+            ap = os.path.join(dirpath, d)
+            if os.path.islink(ap):
+                if not os.path.exists(ap):
+                    problems.append("symlink roto: %s"
+                                    % os.path.relpath(ap, root))
+                elif not _is_safe_symlink(root, ap):
+                    problems.append("symlink no permitido (escapa del arbol): %s"
+                                    % os.path.relpath(ap, root))
+                else:
+                    problems.append("symlink de directorio no soportado en el "
+                                    "formato canonico: %s"
+                                    % os.path.relpath(ap, root))
+                continue
+            if _excluded_dir(d):
+                continue
+            real_dirs.append(d)
+        dirnames[:] = real_dirs
+        for fname in sorted(filenames):
+            if _excluded_file(fname):
+                continue
+            ap = os.path.join(dirpath, fname)
+            rel = os.path.relpath(ap, root).replace("\\", "/")
+            if os.path.islink(ap):
+                if not os.path.exists(ap):
+                    problems.append("symlink roto: %s" % rel)
+                elif not _is_safe_symlink(root, ap):
+                    problems.append("symlink no permitido (escapa del arbol): %s" % rel)
+                else:
+                    problems.append("symlink de fichero no soportado en el formato "
+                                    "canonico: %s" % rel)
+                continue
+            if not os.path.isfile(ap):
+                problems.append("no es un fichero regular: %s" % rel)
+                continue
+            if not os.access(ap, os.R_OK):
+                problems.append("fichero no legible: %s" % rel)
+                continue
+            files.append((rel, ap))
+    files.sort(key=lambda t: t[0])
+    return files, problems
+
+
+def _walk_files(root):
+    """Compat: solo ficheros sin problemas. Prefiere `walk_files_checked`."""
+    files, problems = walk_files_checked(root)
+    if problems:
+        raise ForgeError("no se puede construir el manifiesto: %s" % "; ".join(problems))
+    for rel, ap in files:
+        yield rel, ap
+
+
+# ------------------------------------------------------------- binario/texto
+def _is_binary_file(path):
+    """Clasificacion binaria robusta (sin heuristica de porcentaje).
+
+    Un fichero es binario si contiene un byte NUL en los primeros 8192 bytes
+    **o** si no decodifica como UTF-8 estricto. La clasificacion por porcentaje
+    de bytes no imprimibles se retiro: clasificaba como texto ficheros
+    binarios sin NUL y los corrompia en silencio.
+
+    La decodificacion es INCREMENTAL: un fichero multi-GB no se carga entero
+    en memoria.
+    """
+    import codecs
+    try:
+        with open(path, "rb") as fh:
+            chunk = fh.read(8192)
+            if b"\x00" in chunk:
+                return True
+            decoder = codecs.getincrementaldecoder("utf-8")()
+            while True:
+                block = fh.read(65536)
+                if not block:
+                    break
+                try:
+                    decoder.decode(block)
+                except UnicodeDecodeError:
+                    return True
+            try:
+                decoder.decode(b"", final=True)
+            except UnicodeDecodeError:
+                return True
+    except OSError:
+        return False
+    return False
+
+
+def _lines(path):
+    """Lineas de texto de un fichero. Un binario NUNCA se convierte en texto."""
+    if os.path.isfile(path) and not _is_binary_file(path):
+        with open(path, encoding="utf-8") as fh:
+            return fh.readlines()
+    return []
+
+
+# --------------------------------------------------------------- manifiesto
+def _mode_str(st_mode):
+    """Bits de permiso relevantes, normalizados a 4 digitos octales."""
+    return "%04o" % (st_mode & 0o7777)
 
 
 def candidate_manifest_sha(candidate_dir):
-    """Calcula un hash determinista del árbol completo del candidato.
-    
-    Incluye: rutas relativas normalizadas, tipo, tamaño, SHA-256.
+    """Hash determinista del arbol completo del candidato.
+
+    Incluye: ruta relativa normalizada, tipo, modo, tamano y SHA-256 del
+    contenido. Falla (ForgeError) si hay symlinks no permitidos, symlinks
+    rotos o ficheros ilegibles: un manifiesto incompleto es peor que ninguno.
     """
-    files = dict(_walk_files(candidate_dir))
-    if not files:
-        return sha_text("")
+    files, problems = walk_files_checked(candidate_dir)
+    if problems:
+        raise ForgeError("manifiesto invalido: %s" % "; ".join(problems))
     parts = []
-    for rel, abspath in sorted(files.items()):
+    for rel, abspath in files:
         try:
             st = os.stat(abspath)
-            file_sha = sha_file(abspath)
-            parts.append("%s|%s|%d|%s" % (rel, "file", st.st_size, file_sha))
-        except OSError:
-            parts.append("%s|%s|%d|%s" % (rel, "file", 0, "error"))
+            parts.append("%s|file|%s|%d|%s" % (rel, _mode_str(st.st_mode),
+                                                st.st_size, sha_file(abspath)))
+        except OSError as exc:
+            raise ForgeError("fichero ilegible %s: %s" % (rel, exc))
     return sha_text("\n".join(parts))
 
 
-def validate_diff(diff_text):
-    """Rechaza diffs que intenten rutas fuera del arbol de trabajo."""
-    problems = []
-    for line in diff_text.splitlines():
-        if line.startswith(("--- ", "+++ ")):
-            target = line[4:].strip().split("\t")[0].strip()
-            if target in ("/dev/null",):
-                continue
-            if target.startswith("/") or ".." in target.replace("a/", "").replace("b/", ""):
-                problems.append("ruta sospechosa en diff: %r" % target)
-    return (not problems), problems
+def tree_sha(root):
+    """SHA-256 del arbol de `root` con la misma politica que el manifiesto.
 
-
-def apply_diff_to_temp(diff_text, baseline_dir):
-    """Ejecutor controlado: aplica el diff a una copia temporal del baseline.
-
-    Devuelve la ruta del scratch. El arbol real no se toca nunca.
+    Se usa para comparar el resultado de aplicar un parche con el candidato
+    evaluado: si coinciden, el parche reproduce los bytes exactos.
     """
-    ok, problems = validate_diff(diff_text)
-    if not ok:
-        raise ForgeError("diff inseguro: %s" % "; ".join(problems))
-    scratch = tempfile.mkdtemp(prefix="forge-isolate-")
-    if os.path.isdir(baseline_dir):
-        # Copia recursiva del baseline preservando estructura de directorios
-        for name in os.listdir(baseline_dir):
-            src = os.path.join(baseline_dir, name)
-            dst = os.path.join(scratch, name)
-            if os.path.isfile(src):
-                shutil.copy2(src, dst)
-            elif os.path.isdir(src):
-                shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
-    if diff_text.strip():
-        # parche compatible con `patch -p1`/`git apply`; se aplica con difflib no
-        # disponible -> usamos `git apply` si hay git, si no `patch`.
-        applied = _apply(scratch, diff_text)
-        if not applied:
-            shutil.rmtree(scratch, ignore_errors=True)
-            raise ForgeError("no se pudo aplicar el diff a la copia temporal")
-    return scratch
+    files, problems = walk_files_checked(root)
+    if problems:
+        raise ForgeError("arbol invalido: %s" % "; ".join(problems))
+    parts = []
+    for rel, abspath in files:
+        st = os.stat(abspath)
+        parts.append("%s|file|%s|%d|%s" % (rel, _mode_str(st.st_mode),
+                                            st.st_size, sha_file(abspath)))
+    return sha_text("\n".join(parts))
 
 
-def _apply_binary_diff(scratch, diff_text):
-    """Aplica un diff binario manualmente decodificando el contenido base64."""
-    import base64
-    import re
-    
-    # Parsear el diff binario
-    # Formato: diff --git a/file b/file, index <old>..<new>, GIT binary patch, literal <len>, <base64 content>
-    lines = diff_text.splitlines()
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        if line.startswith("diff --git "):
-            # Parsear archivo
-            match = re.match(r'diff --git a/(.+) b/(.+)', line)
-            if match:
-                # Usar el archivo de destino (b/)
-                rel_file = match.group(2)
-                i += 1
-                # Saltar línea index
-                i += 1
-                # Verificar si es un binary patch
-                if i < len(lines) and lines[i].startswith("GIT binary patch"):
-                    i += 1
-                    # Leer línea "literal <length>"
-                    if i < len(lines) and lines[i].startswith("literal "):
-                        length = int(lines[i].split()[1])
-                        i += 1
-                        # Leer el contenido base64 (puede estar en múltiples líneas)
-                        b64_content = ""
-                        while i < len(lines) and len(b64_content) < length * 4 / 3 + 100:  # estimación
-                            line = lines[i]
-                            if line.startswith(("diff --git ", "index ", "deleted file")):
-                                break
-                            b64_content += line.strip()
-                            i += 1
-                        
-                        # Decodificar y escribir archivo
-                        try:
-                            content = base64.b64decode(b64_content)
-                            dst = os.path.join(scratch, rel_file)
-                            os.makedirs(os.path.dirname(dst), exist_ok=True)
-                            with open(dst, "wb") as f:
-                                f.write(content)
-                            # Saltar al siguiente diff
-                            continue
-                        except Exception as e:
-                            print(f"Error applying binary patch for {rel_file}: {e}")
-                            return False
-                # Saltar línea "deleted file mode..."
-                elif lines[i].startswith("deleted file mode"):
-                    rel_file = lines[i].split()[-1]
-                    dst = os.path.join(scratch, rel_file)
-                    if os.path.exists(dst):
-                        os.remove(dst)
-                i += 1
+def diff_sha(diff_bytes):
+    """SHA-256 de los BYTES EXACTOS del parche (no de una re-serializacion)."""
+    if isinstance(diff_bytes, str):
+        diff_bytes = diff_bytes.encode("utf-8", errors="surrogateescape")
+    return sha_bytes(diff_bytes)
+
+
+# ------------------------------------------------------------------ parche
+def _git_exe():
+    exe = shutil.which("git")
+    if not exe:
+        raise ForgeError("git no esta disponible: no se puede generar ni aplicar "
+                         "un parche canonico (fail-closed)")
+    return exe
+
+
+def _git(repo, args, check=True):
+    cmd = [_git_exe()] + list(args)
+    try:
+        r = subprocess.run(cmd, cwd=repo, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE, timeout=GIT_TIMEOUT_S)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ForgeError("git %s fallo: %s" % (" ".join(args[:2]), exc))
+    if check and r.returncode != 0:
+        raise ForgeError("git %s fallo (rc=%d): %s"
+                         % (" ".join(args[:2]), r.returncode,
+                            (r.stderr or b"").decode("utf-8", "replace")[:400]))
+    return r.returncode, r.stdout, r.stderr
+
+
+def _copy_tree(src, dst):
+    """Copia un arbol a `dst` aplicando la politica de exclusiones comun.
+
+    `src` puede no existir (baseline vacio). Nunca se siguen symlinks.
+    """
+    if not src or not os.path.isdir(src):
+        return
+    os.makedirs(dst, exist_ok=True)
+    for name in sorted(os.listdir(src)):
+        s = os.path.join(src, name)
+        d = os.path.join(dst, name)
+        if os.path.islink(s):
+            # Los symlinks no se replican: el llamador ya los ha bloqueado.
+            continue
+        if os.path.isdir(s):
+            if _excluded_dir(name):
+                continue
+            _copy_tree(s, d)
+        elif os.path.isfile(s):
+            if _excluded_file(name):
+                continue
+            shutil.copy2(s, d)
+
+
+def capture_diff(baseline_dir, candidate_dir, name_hint=""):
+    """Parche Git canonico (bytes) del candidato respecto al baseline.
+
+    El parche usa el formato real de Git (`git diff --binary`), de modo que
+    `git apply --check` lo valida y `git apply` lo aplica byte-exacto, incluidos
+    los ficheros binarios. Si Git no esta disponible o el candidato contiene
+    symlinks (no representables fielmente), se falla cerrado con ForgeError: no
+    se devuelve nunca un parche inventado ni un parche parcial.
+
+    `name_hint` se conserva por compatibilidad de API y no altera las rutas del
+    parche (Git ya las emite como `a/<rel>` / `b/<rel>`).
+    """
+    if not os.path.isdir(candidate_dir):
+        raise ForgeError("candidato inexistente: %s" % candidate_dir)
+    files, problems = walk_files_checked(candidate_dir)
+    if problems:
+        raise ForgeError("candidato invalido: %s" % "; ".join(problems))
+    if baseline_dir and os.path.isdir(baseline_dir):
+        bfiles, bproblems = walk_files_checked(baseline_dir)
+        if bproblems:
+            raise ForgeError("baseline invalido: %s" % "; ".join(bproblems))
+
+    work = tempfile.mkdtemp(prefix="forge-diff-")
+    try:
+        repo = os.path.join(work, "repo")
+        os.makedirs(repo)
+        _git(repo, ["init", "-q"])
+        _git(repo, ["config", "user.email", "forge@localhost"])
+        _git(repo, ["config", "user.name", "arena-forge"])
+        _git(repo, ["config", "core.autocrlf", "false"])
+        _git(repo, ["config", "core.eol", "lf"])
+        _git(repo, ["config", "core.fileMode", "false"])
+        _git(repo, ["config", "commit.gpgsign", "false"])
+        _git(repo, ["config", "diff.noprefix", "false"])
+
+        # 1) baseline -> arbol base
+        _copy_tree(baseline_dir, repo)
+        _git(repo, ["add", "-A", "-f"])
+        rc, out, _err = _git(repo, ["write-tree"], check=False)
+        if rc != 0:
+            raise ForgeError("no se pudo construir el arbol base del baseline")
+        base_tree = out.decode("ascii").strip()
+
+        # 2) limpiar el working tree (menos .git) y copiar el candidato
+        for name in os.listdir(repo):
+            if name == ".git":
+                continue
+            p = os.path.join(repo, name)
+            if os.path.isdir(p) and not os.path.islink(p):
+                shutil.rmtree(p)
             else:
-                i += 1
+                os.remove(p)
+        _copy_tree(candidate_dir, repo)
+
+        # 3) candidato -> arbol candidato y diff entre ambos arboles.
+        #    Se VACIA el indice antes de volver a indexar: el indice guarda
+        #    stat (mtime con granularidad de 1 segundo) y un fichero cuyo
+        #    mtime cae en el mismo segundo que el del baseline se creeria
+        #    "sin cambios" -> el parche saldria VACIO. Vaciarlo obliga a
+        #    hashear el contenido de verdad.
+        _git(repo, ["read-tree", "--empty"])
+        _git(repo, ["add", "-A", "-f"])
+        rc, out, _err = _git(repo, ["write-tree"], check=False)
+        if rc != 0:
+            raise ForgeError("no se pudo construir el arbol del candidato")
+        cand_tree = out.decode("ascii").strip()
+        if base_tree == cand_tree:
+            return b""
+
+        _rc, patch, _err = _git(repo, ["diff", "--binary", "--no-color",
+                                       "--no-ext-diff", "--no-renames",
+                                       base_tree, cand_tree], check=False)
+        return patch
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def capture_diff_text(baseline_dir, candidate_dir, name_hint=""):
+    """Conveniencia para logs: el parche como texto (con escapes seguros)."""
+    return capture_diff(baseline_dir, candidate_dir, name_hint).decode(
+        "utf-8", errors="replace")
+
+
+# --------------------------------------------------------------- validacion
+_PATH_RE_ABS = re.compile(r"^[A-Za-z]:")
+
+
+def _safe_rel_path(path):
+    """True si la ruta del parche es relativa, sin traversal y no absoluta."""
+    if path is None:
+        return False
+    p = path.strip()
+    if not p or p == "/dev/null":
+        return True
+    p = p.replace("\\", "/")
+    if p.startswith("/") or _PATH_RE_ABS.match(p):
+        return False
+    if p.startswith("~"):
+        return False
+    segments = p.split("/")
+    for seg in segments:
+        if seg == "..":
+            return False
     return True
 
 
+def _unquote_c_style(path):
+    """Quita las comillas estilo C que git usa para rutas con espacios.
+
+    Sin esto, `rename to "../evil.txt"` llegaria al validador como
+    `"../evil.txt"` (con la comilla) y la comprobacion de `..` no lo detectaria.
+    """
+    if len(path) >= 2 and path.startswith('"') and path.endswith('"'):
+        inner = path[1:-1]
+        out = []
+        i = 0
+        while i < len(inner):
+            ch = inner[i]
+            if ch == "\\" and i + 1 < len(inner):
+                nxt = inner[i + 1]
+                out.append({"n": "\n", "t": "\t", "r": "\r", '"': '"',
+                            "\\": "\\"}.get(nxt, nxt))
+                i += 2
+                continue
+            out.append(ch)
+            i += 1
+        return "".join(out)
+    return path
 
 
+def _patch_paths(diff_bytes):
+    """Extrae todas las rutas mencionadas por las cabeceras del parche."""
+    if isinstance(diff_bytes, bytes):
+        text = diff_bytes.decode("utf-8", errors="replace")
+    else:
+        text = diff_bytes
+    paths = []
+    for line in text.splitlines():
+        if line.startswith("diff --git "):
+            rest = line[len("diff --git "):].strip()
+            rest = _unquote_c_style(rest)
+            half = len(rest) // 2
+            left = rest[:half].strip()
+            right = rest[half:].strip()
+            for part in (left, right):
+                part = _unquote_c_style(part)
+                if part.startswith("a/"):
+                    part = part[2:]
+                elif part.startswith("b/"):
+                    part = part[2:]
+                paths.append(part)
+        elif line.startswith("--- "):
+            t = line[4:].split("\t")[0].strip()
+            t = _unquote_c_style(t)
+            if t != "/dev/null":
+                paths.append(t[2:] if t.startswith(("a/", "b/")) else t)
+        elif line.startswith("+++ "):
+            t = line[4:].split("\t")[0].strip()
+            t = _unquote_c_style(t)
+            if t != "/dev/null":
+                paths.append(t[2:] if t.startswith(("a/", "b/")) else t)
+        elif line.startswith("rename to ") or line.startswith("copy to "):
+            paths.append(_unquote_c_style(line.split(" ", 2)[2].strip()))
+        elif line.startswith("rename from ") or line.startswith("copy from "):
+            paths.append(_unquote_c_style(line.split(" ", 2)[2].strip()))
+    return paths
 
-def _apply(scratch, diff_text):
-    """Aplica un diff (texto o binario) al scratch."""
-    # Detectar si es un diff binario
-    if "GIT binary patch" in diff_text and "diff --git" in diff_text:
-        return _apply_binary_diff(scratch, diff_text)
-    
-    import subprocess
-    import sys
-    diff_path = os.path.join(scratch, ".forge.patch")
-    with open(diff_path, "w", encoding="utf-8") as fh:
-        fh.write(diff_text)
-    for cmd in (["git", "apply", "-p1", ".forge.patch"],
-                ["patch", "-p1", "-i", ".forge.patch"]):
+
+def validate_diff(diff_bytes):
+    """Rechaza diffs que intenten rutas fuera del arbol de trabajo.
+
+    Valida TODAS las formas de cabecera que puede emitir Git: `diff --git`,
+    `---`, `+++`, `rename to`, `copy to`. Un traversal en cualquiera de ellas
+    invalida el parche entero.
+    """
+    problems = []
+    for target in _patch_paths(diff_bytes):
+        if not _safe_rel_path(target):
+            problems.append("ruta sospechosa en diff: %r" % target)
+    return (not problems), problems
+
+
+# ---------------------------------------------------------------- aplicacion
+def _git_apply(scratch, diff_bytes, check_only=False):
+    exe = shutil.which("git")
+    if not exe:
+        return False
+    patch_path = os.path.join(scratch, ".forge.patch")
+    try:
+        with open(patch_path, "wb") as fh:
+            fh.write(diff_bytes)
+        # `core.autocrlf=false` es OBLIGATORIO: con el valor global de Windows
+        # (true) `git apply` reescribe LF->CRLF al aplicar, y el arbol
+        # resultante deja de coincidir byte a byte con el candidato evaluado.
+        cmd = [exe, "-c", "core.autocrlf=false", "-c", "core.eol=lf",
+               "apply", "-p1", "--whitespace=nowarn", "--binary"]
+        if check_only:
+            cmd.append("--check")
+        cmd.append(".forge.patch")
         try:
-            r = subprocess.run(cmd, cwd=scratch, text=True, stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT, timeout=60)
-            if r.returncode == 0:
-                os.remove(diff_path)
-                return True
+            r = subprocess.run(cmd, cwd=scratch, stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, timeout=GIT_TIMEOUT_S)
         except (OSError, subprocess.TimeoutExpired):
-            continue
-    if os.path.exists(diff_path):
-        os.remove(diff_path)
-    return False
+            return False
+        return r.returncode == 0
+    finally:
+        try:
+            os.remove(patch_path)
+        except OSError:
+            pass
+
+
+def apply_diff_to_temp(diff_bytes, baseline_dir):
+    """Ejecutor controlado: aplica el parche a una copia temporal del baseline.
+
+    Devuelve la ruta del scratch. El arbol real no se toca nunca. Si el parche
+    no valida (`git apply --check`) o no se aplica, el scratch se destruye y se
+    eleva ForgeError: no queda ningun residuo.
+    """
+    ok, problems = validate_diff(diff_bytes)
+    if not ok:
+        raise ForgeError("diff inseguro: %s" % "; ".join(problems))
+    scratch = tempfile.mkdtemp(prefix="forge-isolate-")
+    try:
+        _copy_tree(baseline_dir, scratch)
+        if diff_bytes and diff_bytes.strip():
+            if not _git_apply(scratch, diff_bytes, check_only=True):
+                raise ForgeError("el parche no supera `git apply --check`")
+            if not _git_apply(scratch, diff_bytes, check_only=False):
+                raise ForgeError("no se pudo aplicar el diff a la copia temporal")
+        return scratch
+    except Exception:
+        shutil.rmtree(scratch, ignore_errors=True)
+        raise

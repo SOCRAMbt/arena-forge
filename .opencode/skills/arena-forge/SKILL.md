@@ -1,3 +1,8 @@
+---
+name: arena-forge
+description: Orquesta torneos Answer/Patch con arena_forge.py en la raíz del repo. Úsala cuando el usuario pida arena-forge, un torneo de soluciones, comparar candidatos, NO_SHIP, benchmark de tareas difíciles o el informe del bracket.
+---
+
 # arena-forge
 
 Orquesta torneos Answer/Patch con `arena_forge.py` en la raíz del repo.

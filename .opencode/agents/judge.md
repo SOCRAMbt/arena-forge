@@ -2,21 +2,23 @@
 description: Juzga un match a ciegas contra la rubrica congelada del run
 mode: subagent
 permissions:
+  # Last-match-wins: las denegaciones amplias van PRIMERO y los permisos
+  # concretos al FINAL, o las reglas `allow` quedarian muertas.
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: edit
+    resource: ".arena/**"
+    effect: deny
+  - action: shell
+    resource: "*"
+    effect: deny
   - action: read
     resource: "*"
     effect: allow
   - action: edit
     resource: ".arena/artifacts/verdicts/**"
     effect: allow
-  - action: edit
-    resource: ".arena/**"
-    effect: deny
-  - action: edit
-    resource: "*"
-    effect: deny
-  - action: shell
-    resource: "*"
-    effect: deny
 ---
 
 Juzga el match de tu brief contra la rubrica del run. Lee ambas soluciones

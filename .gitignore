@@ -3,7 +3,11 @@
 runs/
 reports/*.html
 reports/*.md
+reports/*.patch
 !reports/.gitkeep
+# ---> informes de auditoria forense: SI se versionan (evidencia)
+!reports/audit/
+!reports/audit/**
 worktrees/
 tmp/
 __pycache__/

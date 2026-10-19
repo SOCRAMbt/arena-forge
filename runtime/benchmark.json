@@ -1,5 +1,5 @@
 {
- "ts": 1792437267,
+ "ts": 1792443949,
  "seed": 7,
  "tasks": [
   {
@@ -20,7 +20,7 @@
   },
   "fixed_orchestration": {
    "calls": {
-    "small": 20
+    "small": 63
    }
   },
   "arena_e_adaptive": {
@@ -112,5 +112,5 @@
   }
  ],
  "deterministic_ok": true,
- "seconds": 8.8
+ "seconds": 10.3
 }

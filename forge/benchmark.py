@@ -70,7 +70,7 @@ def run_task(task):
     }
 
 
-def run(sizes=(4,), seed=7):
+def run(sizes=(4,), seed=7, out_file=None):
     t0 = time.time()
     results = {"ts": now_ts(), "seed": seed, "tasks": [], "methods": {},
                "not_measured": [], "declaration": ""}
@@ -122,13 +122,15 @@ def run(sizes=(4,), seed=7):
         "Medido: scheduler, gates, aceptacion determinista, llamadas por metodo. "
         "NO medido: calidad LLM y valor de E (declarado, no fabricado).")
     results["seconds"] = round(time.time() - t0, 1)
-    _save(results)
+    _save(results, out_file)
     return results
 
 
-def _save(results):
-    os.makedirs(os.path.dirname(BENCH_FILE), exist_ok=True)
-    with open(BENCH_FILE, "w", encoding="utf-8") as fh:
+def _save(results, out_file=None):
+    """Persiste el resultado. `out_file` permite no tocar el repositorio."""
+    target = out_file or BENCH_FILE
+    os.makedirs(os.path.dirname(os.path.abspath(target)), exist_ok=True)
+    with open(target, "w", encoding="utf-8") as fh:
         json.dump(results, fh, indent=1, ensure_ascii=False)
         fh.write("\n")
 

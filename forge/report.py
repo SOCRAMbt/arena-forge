@@ -8,7 +8,7 @@ import html
 import json
 import os
 
-from . import ledger, score as score_mod, state
+from . import integrity, ledger, score as score_mod, state
 from .util import ForgeError, now_ts, sha_file
 
 
@@ -50,9 +50,28 @@ def gather(run_dir):
 
 def resolve(run_dir, data=None):
     """Decision explicita con razon. Gates mandan sobre cualquier score.
-    
-    P0-01/P0-03/P0-06: Requiere aislamiento verificado, suite hash intacto,
-    y evaluaciones COMPLETAS para todos los candidatos para WINNER.
+
+    Compat: devuelve (decision, reason, eligible).
+    """
+    decision, reason, eligible, _winner = resolve_full(run_dir, data)
+    return decision, reason, eligible
+
+
+def resolve_full(run_dir, data=None, ignore_terminal=False):
+    """Decision explicita con razon y GANADOR PERSISTIDO.
+
+    Devuelve (decision, reason, eligible, winner). El `winner` es el candidato
+    EXACTO que se aplicara. Antes `apply` tomaba `eligible[0]`, que en un
+    desempate de juez ciego podia ser un candidato DISTINTO del juzgado.
+
+    Gates mandan sobre cualquier score. P0-01/P0-03/P0-06: requiere aislamiento
+    verificado, suite hash intacto (RECALCULADO), baseline congelado intacto,
+    diff_sha recalculado y evaluaciones COMPLETAS para todos los candidatos.
+
+    `ignore_terminal=True` se usa por `apply` y `verify`: una vez decidido, el
+    run pasa a `COMPLETED`/`NO_SHIP`, y re-derivar la decision exigiria volver
+    a decidir un run ya terminal. La decision PERSISTIDA manda; lo que se
+    re-deriva es su contenido (hash), para detectar que el estado cambio.
     """
     data = data or gather(run_dir)
     run = data["run"]
@@ -60,28 +79,56 @@ def resolve(run_dir, data=None):
     mode = run.get("mode", "answer")
     st = run.get("status") or run.get("phase")
 
-    if st in ("CANCELLED", "FAILED", "BLOCKED"):
-        return st, "estado terminal previo del run", []
+    if not ignore_terminal and st in ("COMPLETED", "CANCELLED", "FAILED",
+                                      "NO_SHIP", "BLOCKED"):
+        # Un run ya terminal NO puede volver a decidir: si no, un run en NO_SHIP
+        # podria producir WINNER y su parche.
+        return ("NO_SHIP" if st != "COMPLETED" else "COMPLETED",
+                "estado terminal previo del run: %s" % st, [], None)
 
     if mode == "patch":
         # P0-01: validar aislamiento antes de considerar elegibles
-        isolation = data.get("isolation") or {}
-        if not isolation.get("ok"):
-            return "NO_SHIP", "aislamiento no verificado: %s" % isolation.get("problems", ["unknown"]), []
-        
+        iso = data.get("isolation") or {}
+        if not iso.get("ok"):
+            return ("NO_SHIP",
+                    "aislamiento no verificado: %s" % iso.get("problems", ["unknown"]),
+                    [], None)
+
+        # El baseline congelado es obligatorio en modo patch: sin el, el diff no
+        # es recalculable y el `diff_sha` del gate no describe nada verificable.
+        if not os.path.isdir(os.path.join(run_dir, "baseline")):
+            return "NO_SHIP", "baseline congelado ausente en el run", [], None
+
+        # P0-02: revalidar la suite VIVA (no solo comparar hashes almacenados)
+        if run.get("suite"):
+            ok, reason, _sha = integrity.recompute_suite_sha(run)
+            if not ok:
+                return "NO_SHIP", reason, [], None
+            if not integrity.suite_outside_candidates(run):
+                return ("NO_SHIP",
+                        "la suite protegida esta dentro de un workspace candidato",
+                        [], None)
+
+        # P0-02: revalidar la copia congelada del baseline
+        ok, reason = integrity.verify_frozen_baseline(run)
+        if not ok:
+            return "NO_SHIP", reason, [], None
+
         # P0-03: validar integridad de suite contra hash congelado
         expected_suite_sha = run.get("suite_sha")
         if not expected_suite_sha:
-            return "NO_SHIP", "suite_sha congelado ausente en run", []
-        # Validar formato SHA256 (64 chars hex)
-        if not isinstance(expected_suite_sha, str) or len(expected_suite_sha) != 64 or not all(c in "0123456789abcdef" for c in expected_suite_sha):
-            return "NO_SHIP", "suite_sha congelado malformado: %s" % expected_suite_sha, []
-        
+            return "NO_SHIP", "suite_sha congelado ausente en run", [], None
+        if (not isinstance(expected_suite_sha, str) or len(expected_suite_sha) != 64
+                or not all(c in "0123456789abcdef" for c in expected_suite_sha)):
+            return ("NO_SHIP",
+                    "suite_sha congelado malformado: %s" % expected_suite_sha,
+                    [], None)
+
         # P0-A.1: IDs de gates deben coincidir EXACTAMENTE con candidatos registrados
         expected_candidates = list(run.get("candidates", {}).keys())
         if not expected_candidates:
-            return "NO_SHIP", "sin candidatos en el run", []
-        
+            return "NO_SHIP", "sin candidatos en el run", [], None
+
         gate_ids = set(gates.keys())
         expected_ids = set(expected_candidates)
         if gate_ids != expected_ids:
@@ -92,116 +139,114 @@ def resolve(run_dir, data=None):
                 problems.append("IDs extra en gates: %s" % ", ".join(sorted(extra)))
             if missing:
                 problems.append("candidatos sin GateResult: %s" % ", ".join(sorted(missing)))
-            return "NO_SHIP", "IDs de gates no coinciden con candidatos: %s" % "; ".join(problems), []
-        
-        # P0-03: validar integridad de suite contra hash congelado
+            return ("NO_SHIP",
+                    "IDs de gates no coinciden con candidatos: %s" % "; ".join(problems),
+                    [], None)
+
+        # P0-03: el gate debe haber usado la MISMA suite congelada
         for cid in expected_candidates:
             g = gates.get(cid, {})
             g_sha = g.get("suite_sha")
             if expected_suite_sha and g_sha != expected_suite_sha:
-                return "NO_SHIP", ("suite hash mismatch para %s: gate=%s run=%s" %
-                                  (cid, g_sha, expected_suite_sha)), []
-        
+                return ("NO_SHIP",
+                        "suite hash mismatch para %s: gate=%s run=%s"
+                        % (cid, g_sha, expected_suite_sha), [], None)
+
         # P0-06: requerir evaluaciones COMPLETAS para todos los candidatos
-        # Verificar que TODOS los candidatos esperados tienen GateResult
         missing = [c for c in expected_candidates if c not in gates]
         if missing:
-            return "NO_SHIP", ("faltan GateResult para candidatos: %s" % ", ".join(missing)), []
-        
-        # Verificar que cada resultado es conclusivo (no NOT_RUN, BLOCKED, INCONCLUSIVE)
-        # y que suite hash e aislamiento son válidos
+            return ("NO_SHIP",
+                    "faltan GateResult para candidatos: %s" % ", ".join(missing),
+                    [], None)
+
+        # Cada resultado debe ser CONCLUSIVO (no NOT_RUN/BLOCKED/INCONCLUSIVE)
         for cid in expected_candidates:
             g = gates.get(cid, {})
-            state = g.get("state")
-            if state in ("NOT_RUN", "BLOCKED", "INCONCLUSIVE", None):
-                return "NO_SHIP", ("candidato %s tiene resultado inconcluso: %s" %
-                                  (cid, state)), []
-            g_sha = g.get("suite_sha")
-            if expected_suite_sha and g_sha != expected_suite_sha:
-                return "NO_SHIP", ("suite hash mismatch para %s: gate=%s run=%s" %
-                                  (cid, g_sha, expected_suite_sha)), []
-            # aislamiento ya validado arriba para todos
-        
-        # P0-A.4: candidate_manifest_sha y diff_sha obligatorios en cada gate concluido
-        # Validar formato SHA256 (64 chars hex)
+            stt = g.get("state")
+            if stt in ("NOT_RUN", "BLOCKED", "INCONCLUSIVE", None):
+                return ("NO_SHIP",
+                        "candidato %s tiene resultado inconcluso: %s" % (cid, stt),
+                        [], None)
+
+        # P0-A.4: candidate_manifest_sha y diff_sha obligatorios y bien formados
         def _is_valid_sha256(val):
-            return isinstance(val, str) and len(val) == 64 and all(c in "0123456789abcdef" for c in val)
+            return (isinstance(val, str) and len(val) == 64
+                    and all(c in "0123456789abcdef" for c in val))
 
         for cid in expected_candidates:
             g = gates.get(cid, {})
             if not g.get("candidate_manifest_sha"):
-                return "NO_SHIP", "candidato %s sin candidate_manifest_sha en gate" % cid, []
+                return ("NO_SHIP",
+                        "candidato %s sin candidate_manifest_sha en gate" % cid,
+                        [], None)
             if not _is_valid_sha256(g.get("candidate_manifest_sha")):
-                return "NO_SHIP", "candidato %s candidate_manifest_sha malformado: %s" % (cid, g.get("candidate_manifest_sha")), []
+                return ("NO_SHIP",
+                        "candidato %s candidate_manifest_sha malformado: %s"
+                        % (cid, g.get("candidate_manifest_sha")), [], None)
             if not g.get("diff_sha"):
-                return "NO_SHIP", "candidato %s sin diff_sha en gate" % cid, []
+                return "NO_SHIP", "candidato %s sin diff_sha en gate" % cid, [], None
             if not _is_valid_sha256(g.get("diff_sha")):
-                return "NO_SHIP", "candidato %s diff_sha malformado: %s" % (cid, g.get("diff_sha")), []
-        
-        # Ahora sí: evaluar elegibilidad solo si todos están completos
-        eligible = sorted(c for c in expected_candidates if gates.get(c, {}).get("state") == "PASS")
+                return ("NO_SHIP",
+                        "candidato %s diff_sha malformado: %s"
+                        % (cid, g.get("diff_sha")), [], None)
+
+        # Ahora si: evaluar elegibilidad solo si todos estan completos
+        eligible = sorted(c for c in expected_candidates
+                          if gates.get(c, {}).get("state") == "PASS")
         if not gates:
-            return "NO_SHIP", "sin GateResult: la evaluacion no es confiable", []
+            return "NO_SHIP", "sin GateResult: la evaluacion no es confiable", [], None
         if not eligible:
-            return ("NO_SHIP", "ningun candidato supera los gates obligatorios", [])
-        
-        # P0-A: Validar que TODOS los candidatos tienen directorio válido y manifest coincide
-        import os
+            return ("NO_SHIP", "ningun candidato supera los gates obligatorios",
+                    [], None)
+
+        # P0-A: TODOS los candidatos deben tener directorio valido y manifest igual
         for cid in expected_candidates:
             g = gates.get(cid, {})
             cdir = os.path.join(run_dir, "candidates", cid)
-            # Verificar que el directorio del candidato existe
             if not os.path.isdir(cdir):
-                return "NO_SHIP", "candidato %s: directorio ausente" % cid, []
-            # Verificar que el realpath está dentro del run
+                return "NO_SHIP", "candidato %s: directorio ausente" % cid, [], None
             real_cdir = os.path.realpath(cdir)
             run_real = os.path.realpath(run_dir)
             if not (real_cdir == run_real or real_cdir.startswith(run_real + os.sep)):
-                return "NO_SHIP", "candidato %s: directorio fuera del run" % cid, []
-            # Verificar manifest para TODOS los candidatos (no solo elegibles)
+                return "NO_SHIP", "candidato %s: directorio fuera del run" % cid, [], None
             saved_manifest = gates.get(cid, {}).get("candidate_manifest_sha")
             if saved_manifest:
                 from .isolation import candidate_manifest_sha
                 current_manifest = candidate_manifest_sha(cdir)
                 if current_manifest != saved_manifest:
-                    return "NO_SHIP", ("candidato %s modificado tras gate: manifest=%s gate=%s" %
-                                          (cid, candidate_manifest_sha(os.path.join(run_dir, "candidates", cid)), saved_manifest)), []
-        
-        # P0-05: validar que el manifest del candidato no ha cambiado desde el gate
-        for cid in eligible:
-            g = gates.get(cid, {})
-            saved_manifest = g.get("candidate_manifest_sha")
-            if saved_manifest:
-                import os
-                cdir = os.path.join(run_dir, "candidates", cid)
-                if os.path.isdir(cdir):
-                    from .isolation import candidate_manifest_sha
-                    current_manifest = candidate_manifest_sha(cdir)
-                    if current_manifest != saved_manifest:
-                        return "NO_SHIP", ("candidato %s modificado tras gate: manifest=%s gate=%s" %
-                                          (cid, current_manifest, saved_manifest)), []
-        
-        # §6 nivel 2: el juez ciego solo compara candidatos elegibles. Si hay
-        # un unico elegible, la eleccion por gates es determinista y no
-        # requiere (ni puede fabricar) un veredicto de comparacion.
+                    return ("NO_SHIP",
+                            "candidato %s modificado tras gate: manifest=%s gate=%s"
+                            % (cid, current_manifest, saved_manifest), [], None)
+
+        # P0-02: el `diff_sha` del gate debe coincidir con el diff RECALCULADO.
+        # Se comprueba DESPUES del manifiesto: si el candidato cambio, la causa
+        # raiz es "modificado tras gate", no "diff_sha no coincide".
+        ok, reason = integrity.verify_diff_hashes(run_dir, run, gates)
+        if not ok:
+            return "NO_SHIP", reason, [], None
+
+        # §6 nivel 2: con un unico elegible la eleccion por gates es determinista
+        # y no requiere (ni puede fabricar) un veredicto de comparacion.
         if len(eligible) == 1:
             hashes = set(g.get("suite_sha") for g in gates.values())
             same_suite = "misma suite" if len(hashes) == 1 else "suite INCONSISTENTE"
-            return "WINNER", (
-                "%s unico elegible (todas las gates PASS, %s, suite_sha=%s)"
-                % (eligible[0], same_suite, list(hashes)[0])), eligible
+            return ("WINNER",
+                    "%s unico elegible (todas las gates PASS, %s, suite_sha=%s)"
+                    % (eligible[0], same_suite, list(hashes)[0]),
+                    eligible, eligible[0])
         cand, info = score_mod.evaluate_patch_judgement(
             data["patch_judge"] or {}, eligible, data["label_map"])
         if cand:
-            return "WINNER", "%s gana (gates PASS + juez ciego: %s)" % (
-                cand, info.get("reason", "")), eligible
-        return "NO_SHIP", info.get("reason", "sin desempate valido"), eligible
+            return ("WINNER",
+                    "%s gana (gates PASS + juez ciego: %s)"
+                    % (cand, info.get("reason", "")), eligible, cand)
+        return "NO_SHIP", info.get("reason", "sin desempate valido"), eligible, None
 
     # answer
     champ = data["arena"].get("champion")
     if champ:
-        return "WINNER", "campeon del bracket answer: %s" % champ, []
-    return "NO_SHIP", "sin campeon (torneo incompleto o cancelado)", []
+        return "WINNER", "campeon del bracket answer: %s" % champ, [], champ
+    return "NO_SHIP", "sin campeon (torneo incompleto o cancelado)", [], None
 
 
 def render_markdown(run_dir, data, decision, reason, eligible):

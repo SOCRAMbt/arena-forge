@@ -1,0 +1,21 @@
+# Normalizacion de finales de linea.
+#
+# El manifiesto de candidatos y el parche exportado se calculan sobre los
+# BYTES del fichero. Si el checkout convierte LF<->CRLF, el mismo contenido
+# produce manifiestos y hashes distintos en maquinas distintas: la evidencia
+# deja de ser comparable. Se fija LF en todo el repositorio.
+* text=auto eol=lf
+
+# Binarios: nunca se convierten.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.exe binary
+*.dll binary
+*.so binary
+*.pyc binary

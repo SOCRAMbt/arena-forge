@@ -1,68 +1,82 @@
 {
- "version": "opencode v2.0.32",
+ "version": "2.0.32",
  "platform": "Windows-11-10.0.26200-SP0",
  "python": "3.12.4",
- "probed": 1792437267,
+ "probed": 1792449774,
+ "probed_at": "2026-10-19T19:42:54-0300",
+ "opencode_executable": "../AppData/Roaming/npm/opencode.CMD",
  "capabilities": {
   "shell_tool": {
    "status": "verified",
-   "evidence": "shell tool ejecuta comandos correctamente",
-   "by": "functional_test"
+   "evidence": "host: ejecucion de comandos disponible (no es el shell tool de OpenCode)",
+   "by": "host",
+   "scope": "host"
+  },
+  "cwd_control": {
+   "status": "verified",
+   "evidence": "host: subprocess con cwd explicito funciona (no es una capacidad del runtime de OpenCode)",
+   "by": "host",
+   "scope": "host"
   },
   "python_runtime": {
    "status": "verified",
    "evidence": "3.12.4",
-   "by": "platform"
-  },
-  "skills_native": {
-   "status": "unsupported",
-   "evidence": "skill load fallo (rc=1): DESCRIPTION\n  OpenCode command line interface\n\nUSAGE\n  opencode <subcommand> [flags] [<directory>]\n\nARGUMENTS\n  directory string    Directory to start OpenCode in (optional)\n\nFLAGS\n  --standalone     ",
-   "by": "functional_test"
-  },
-  "subagent_tool": {
-   "status": "unsupported",
-   "evidence": "subagent foreground fallo (rc=1): DESCRIPTION\n  Run OpenCode with a message\n\nUSAGE\n  opencode run [flags] [<message...>]\n\nARGUMENTS\n  message... string    Message to send (optional)\n\nFLAGS\n  --standalone            Run with a private ",
-   "by": "functional_test"
-  },
-  "subagent_foreground": {
-   "status": "unsupported",
-   "evidence": "subagent foreground fallo (rc=1): DESCRIPTION\n  Run OpenCode with a message\n\nUSAGE\n  opencode run [flags] [<message...>]\n\nARGUMENTS\n  message... string    Message to send (optional)\n\nFLAGS\n  --standalone            Run with a private ",
-   "by": "functional_test"
-  },
-  "subagent_background": {
-   "status": "unknown",
-   "evidence": "no se prueba en probe (requiere sesion prolongada)",
-   "by": "none"
-  },
-  "agent_profiles": {
-   "status": "unknown",
-   "evidence": "directorio agents no encontrado",
-   "by": "none"
-  },
-  "permission_rules": {
-   "status": "verified",
-   "evidence": "reglas {action, resource, effect} detectadas en V2",
-   "by": "docs"
-  },
-  "readonly_agent": {
-   "status": "verified",
-   "evidence": "explore denego edicion correctamente (rc=1): DESCRIPTION\n  Run OpenCode with a message\n\nUSAGE\n  opencode run [flags] [<message...>]\n\nARGUMENTS\n  message... string    Message to send (optional)\n\nFLAGS\n  --standalone            Run with a private ",
-   "by": "functional_test"
-  },
-  "cwd_control": {
-   "status": "verified",
-   "evidence": "subprocess con cwd=C:\\Users\\Marcos\\AppData\\Local\\Temp\\opencode_cwd_test_555em17z funciono",
-   "by": "functional_test"
+   "by": "platform",
+   "scope": "host"
   },
   "state_on_disk": {
    "status": "verified",
-   "evidence": "estado en disco: directorio .arena existe (sin runs previos)",
-   "by": "filesystem"
+   "evidence": "run creado, cerrado, reabierto y reanudado; ledger verificado (2 eventos)",
+   "by": "functional_test",
+   "scope": "repo"
+  },
+  "agent_profiles": {
+   "status": "verified",
+   "evidence": "perfiles .md en .opencode/agents: implementer.md, judge.md, reviewer.md, scout.md",
+   "by": "filesystem",
+   "scope": "repo"
+  },
+  "permission_rules": {
+   "status": "unknown",
+   "evidence": "orden de reglas correcto en 4 permisos (analisis estatico); la ENFORCACION en runtime no esta probada (requiere llamada a modelo)",
+   "by": "static_analysis",
+   "scope": "opencode"
+  },
+  "skills_native": {
+   "status": "inconclusive",
+   "evidence": "frontmatter valido: name=arena-forge description=222 chars; el runtime no la listo (rc=0). La ENFORCACION de carga por ID no esta probada",
+   "by": "functional_test",
+   "scope": "opencode"
+  },
+  "subagent_tool": {
+   "status": "blocked",
+   "evidence": "BLOCKED: requiere llamada a modelo (coste no autorizado). No se puede probar la creacion de un subagente nativo sin ejecutarla",
+   "by": "functional_test",
+   "scope": "opencode"
+  },
+  "readonly_agent": {
+   "status": "blocked",
+   "evidence": "BLOCKED: requiere llamada a modelo (coste no autorizado)",
+   "by": "functional_test",
+   "scope": "opencode"
+  },
+  "subagent_foreground": {
+   "status": "blocked",
+   "evidence": "derivado de la prueba de subagent_tool: BLOCKED: requiere llamada a modelo (coste no autorizado). No se puede probar la creacion de un subagente nativo sin ejecutarla",
+   "by": "derived",
+   "scope": "opencode"
+  },
+  "subagent_background": {
+   "status": "unknown",
+   "evidence": "NOT_RUN: requiere sesion prolongada y llamada a modelo",
+   "by": "none",
+   "scope": "opencode"
   },
   "plugin_api": {
    "status": "unknown",
-   "evidence": "no se prueba en probe (no se usa)",
-   "by": "none"
+   "evidence": "NOT_RUN: la API de plugin no se usa en el producto",
+   "by": "none",
+   "scope": "opencode"
   }
  }
 }

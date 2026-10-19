@@ -1,0 +1,2848 @@
+{
+ "generated_at": "2026-10-19T19:56:16-0300",
+ "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+ "working_tree": "dirty (cambios de la auditoria del 2026-10-19, sin commit)",
+ "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+ "exit_code": 0,
+ "summary_line": "?",
+ "python_version": "3.12.4",
+ "opencode_version": "opencode v2.0.32",
+ "platform": "Windows-11-10.0.26200-SP0 AMD64",
+ "pytest_version": "pytest 9.1.1",
+ "git_version": "git version 2.51.0.windows.1",
+ "counts": {
+  "total": 113,
+  "PASS": 112,
+  "FAIL": 0,
+  "NOT_RUN": 1
+ },
+ "duration_total_ms": 421480,
+ "note": "Los tests NO escriben dentro del repositorio: `adapter.probe(persist=False)` y `bench_mod.run(out_file=...)` dirigen sus artefactos a un temporal. `duration_ms` procede del informe JUnit de la misma ejecucion.",
+ "tests": [
+  {
+   "test_id": "tests/test_forge.py::SchedulerDeterminismTest::test_different_seed_differs",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 6,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::SchedulerDeterminismTest::test_same_seed_same_deal",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 7,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::SchedulerDeterminismTest::test_sizes_even_odd_and_single_winner",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 9,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ContractsTest::test_gate_and_judge_validation",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ContractsTest::test_job_and_decision_ranges",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ContractsTest::test_run_validation",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::StateMachineTest::test_deciding_preconditions",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::StateMachineTest::test_legal_and_illegal",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::StateMachineTest::test_terminal_flags",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::LedgerTest::test_append_only_and_verify",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 39,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::LedgerTest::test_corrupt_line_does_not_break_subsequent_chain",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 28,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::LedgerTest::test_corrupt_line_flag_not_deleted",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 16,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::LedgerTest::test_tampering_is_detected",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 21,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::IsolationTest::test_absolute_windows_path_rejected",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 3,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::IsolationTest::test_broken_symlink_is_reported",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 6,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::IsolationTest::test_diff_git_header_traversal_rejected",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 4,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::IsolationTest::test_diff_traversal_rejected",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 2,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::IsolationTest::test_distinct_workspaces",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 7,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::IsolationTest::test_duplicate_ids_detected",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 6,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::IsolationTest::test_ensure_workspaces_does_not_create_outside_the_run",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 5,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::IsolationTest::test_manifest_includes_mode",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 1,
+   "duration_ms": 7,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "NOT_RUN"
+  },
+  {
+   "test_id": "tests/test_forge.py::IsolationTest::test_redact_covers_common_secret_formats",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 3,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::IsolationTest::test_unsafe_symlink_blocks_manifest",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 8,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_added_binary_file_appears",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 6543,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_binary_with_nul_roundtrip_is_byte_exact",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 5223,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_binary_without_nul_in_first_8192_is_not_text",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 5273,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_capture_diff_is_not_empty_when_mtimes_share_a_second",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 4736,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_capture_diff_refuses_symlinked_candidate",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 6,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_deleted_binary_file_is_removed",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 5510,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_diff_sha_is_over_the_exact_bytes",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 4735,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_git_apply_check_accepts_generated_patch",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 5234,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_invalid_utf8_bytes_survive_roundtrip",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 5232,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_mixed_diff_keeps_the_text_hunk",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 5286,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_patch_is_a_real_git_patch",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 4571,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_text_roundtrip_is_byte_exact",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 5324,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BinaryPatchTest::test_traversal_patch_is_rejected_and_writes_nothing_outside",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 4,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::GatesTest::test_buggy_fails_gold_passes",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 9781,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::GatesTest::test_environment_error_is_not_reported_as_candidate_failure",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::GatesTest::test_gate_blocks_when_suite_hash_changed",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 3,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::GatesTest::test_gate_declares_security_mode",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 3320,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::GatesTest::test_gate_rejects_candidate_forced_exit_zero",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 6553,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::GatesTest::test_harness_tampering_blocked",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 9,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::GatesTest::test_injection_readme_inert",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 3324,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::GatesTest::test_minimal_env_has_no_user_site_and_no_plugin_autoload",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 2,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::GatesTest::test_nested_conftest_in_candidate_is_rejected",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 9,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::GatesTest::test_not_run_when_suite_missing",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 2,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::GatesTest::test_suite_inside_candidate_workspace_is_detected",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 5,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::GatesTest::test_suite_sha_covers_pytest_config_files",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 17,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ScoreTest::test_dimension_total",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ScoreTest::test_evidence_required",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ScoreTest::test_gate_binds_judge",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_budget_is_reserved_before_the_job_is_created",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 28,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_budget_over_rejected",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 5,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_cancelled_run_is_not_reopened_by_agent_e",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 61,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_corrupt_decision_line_is_preserved",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 126,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_decision_validates_and_persists",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 33,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_decisions_file_is_append_only",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 55,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_human_approval_must_bind_the_decision",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 9,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_human_approval_required_blocks_execution",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 10,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_human_approval_valid_allows_execution",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 51,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_illegal_decision_rejected",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 4,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_job_done_requires_existing_output",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 64,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_job_ids_are_deterministic_and_resume_does_not_duplicate",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 36,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_launch_phase_does_not_report_success_without_started_work",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 114,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_no_ship_when_no_eligible",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 5,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_request_evidence_cannot_succeed_without_evidence",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 54,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_two_jobs_cannot_exceed_the_remaining_budget",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 36,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AgentETest::test_unknown_decision_field_rejected",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 2,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_html_escapes_script",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 18258,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_no_ship_when_baseline_frozen_is_absent",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 8916,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_no_ship_when_candidate_gate_blocked",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 8870,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_no_ship_when_candidate_gate_inconclusive",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 8932,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_no_ship_when_candidate_gate_not_run",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 8866,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_no_ship_when_candidate_missing_gate_result",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 9063,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_no_ship_when_candidate_modified_after_gate",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 9137,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_no_ship_when_diff_sha_does_not_match_the_recomputed_diff",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 13703,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_no_ship_when_every_candidate_fails_its_gate",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 9067,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_no_ship_when_frozen_baseline_changed",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 8883,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_no_ship_when_isolation_invalid",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 8957,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_no_ship_when_suite_hash_mismatch",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 8922,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_no_ship_when_suite_was_tampered_after_gates",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 8870,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_resolve_full_returns_the_judged_winner",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 18214,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ReportTest::test_winner_when_all_evaluated_one_eligible",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 17833,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ApplyIntegrityTest::test_apply_blocks_when_candidate_changed_after_gates",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 8934,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ApplyIntegrityTest::test_apply_blocks_when_frozen_baseline_changed",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 8883,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ApplyIntegrityTest::test_apply_exports_the_judged_winner_not_the_first_eligible",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 51500,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ApplyIntegrityTest::test_apply_requires_approve",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 8842,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ApplyIntegrityTest::test_exported_patch_sha_matches_the_gated_diff_sha",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 40982,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ApplyIntegrityTest::test_report_persists_the_decision",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 26785,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BudgetTest::test_extreme_requires_confirm",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 2,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BudgetTest::test_init_rejects_agents_over_profile_max",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 2,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BudgetTest::test_profile_limits",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 2,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ResumeCancelTest::test_cancel_blocks_gates_and_decide",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1986,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ResumeCancelTest::test_cancel_keeps_artifacts",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1949,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::ResumeCancelTest::test_resume_keeps_completed",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 2657,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::PreexistingChangesTest::test_user_work_untouched",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1567,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AdapterTest::test_agent_profiles_are_found_in_the_repo",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1325,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AdapterTest::test_detect_version_returns_semver",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 395,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AdapterTest::test_missing_mandatory_reports_the_gap",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AdapterTest::test_mode_requirements_exist_for_every_mode",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AdapterTest::test_model_dependent_probes_are_blocked_without_authorisation",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 765,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AdapterTest::test_permission_rules_are_not_claimed_verified_without_enforcement",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 744,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AdapterTest::test_probe_does_not_write_the_repo_when_persist_is_false",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 735,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AdapterTest::test_probe_marks_unknown_not_verified",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 752,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AdapterTest::test_state_on_disk_probe_is_a_real_roundtrip",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 26,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::AdapterTest::test_summary_counts_only_real_statuses",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 736,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::NoDuplicatesTest::test_no_duplicate_top_level_definitions",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 54,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::PortabilityTest::test_agent_permission_rules_put_allow_last",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 2,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::PortabilityTest::test_no_absolute_host_paths_in_the_repo",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 27,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::PortabilityTest::test_repo_skill_has_opencode_frontmatter",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::PortabilityTest::test_test_paths_are_derived_from_the_checkout",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 1,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BenchmarkTest::test_benchmark_does_not_write_into_the_repo_when_asked",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 6823,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "tests/test_forge.py::BenchmarkTest::test_deterministic_ok_and_declared_gaps",
+   "command": "python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180",
+   "exit_code": 0,
+   "duration_ms": 6928,
+   "python_version": "3.12.4",
+   "opencode_version": "opencode v2.0.32",
+   "commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+   "input_hashes": {
+    "arena_forge.py": "0d190d663149b45d93a890182537fc92134a7a1d",
+    "forge/isolation.py": "6207369cc97f6a6c0ae3a3b5511ea3260050ef62",
+    "forge/gates.py": "678c02dd0ddbbfd3f0a466c2dc383f90ce460acb",
+    "forge/report.py": "26cc7ba37f3724e2e66492a295317393e72fe619",
+    "forge/integrity.py": "a4159db5345355d29b0fc4a87e1d3514072c7c88",
+    "forge/adapter.py": "c1820e30b145dd0a0663703b05d1a81e9d02625c",
+    "forge/agent_e.py": "a9405df6ab6af3ddac915a554dbbd40361aee581",
+    "forge/ledger.py": "400e01eca6c86b63b61b2a48284d0d8640a12420",
+    "forge/util.py": "d17b8cc450eda5860aaf139f0bbc44ce665af19f",
+    "tests/test_forge.py": "ffb08052dea14a399ef16ae6bdc860ba55788bc2"
+   },
+   "output_artifacts": [
+    "reports/audit/test-results.json"
+   ],
+   "status": "PASS"
+  }
+ ]
+}
