@@ -181,7 +181,22 @@ propia remediacion**; todos se han reproducido, corregido y cubierto con test.
 
 ---
 
+## Evidencia versionada (cierra el hueco "nada verificable está en el repo")
+
+La revisión 5 señaló (§B) que el único parche exportado verificable estaba
+**excluido de git** y que no existía ningún artefacto binario persistido. Cerrado:
+
+| Requisito | Dónde | Verificado por |
+|---|---|---|
+| Parche round-trip del E2E | `reports/audit/artifacts/run-20261019-195822-s21.patch` | `AuditArtifactsTest::test_packaged_patch_applies_to_a_clean_baseline` |
+| Cadena gates→decisión→ledger | `reports/audit/artifacts/{gates,decision,isolation}.json` + `ledger.jsonl` | `AuditArtifactsTest::test_packaged_evidence_hash_chain_is_consistent` |
+| Suma de verificación | `reports/audit/artifacts/SHA256SUMS.txt` | `AuditArtifactsTest::test_packaged_evidence_checksums_match` |
+| Artefacto binario de prueba | `fixtures/patch-demo/binary/sample.bin` | `BinaryPatchTest::test_persisted_binary_fixture_roundtrip` |
+
+`sha256(parche) == diff_sha del gate == diff_sha de decision.json` — comprobado
+en la ejecución: `c68f82cde82f99a62b22d055be908c13fa957222114deecd589c88a7f718f59f`.
+
 ## Verificación de no-regresión
 
-`python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180` → **113 passed**, exit 0.
+`python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180` → **117 passed + 1 skip explicito**, exit 0.
 Detalle por test en [`test-results.json`](test-results.json).

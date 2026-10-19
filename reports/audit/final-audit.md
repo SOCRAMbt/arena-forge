@@ -187,14 +187,39 @@ salen de `compute_acceptance.py`; el reparto criterio→área está en `acceptan
 
 ---
 
+## 6bis. Evidencia versionada (verificable por un tercero)
+
+eports/audit/artifacts/\ contiene la cadena de decision del E2E Patch:
+
+| Artefacto | Que demuestra |
+|---|---|
+| \gates.json\ | veredicto por candidato: estado, \suite_sha\, \candidate_manifest_sha\, \diff_sha\ |
+| \decision.json\ | decision persistida: \decision_id\ (ligado al contenido), \winner_id\, \diff_sha\ |
+| \isolation.json\ | prueba de aislamiento de los workspaces |
+| \ledger.jsonl\ | historial append-only con cadena de hashes |
+| un-20261019-195822-s21.patch\ | el parche round-trip exportado (parche Git real) |
+| \SHA256SUMS.txt\ | SHA-256 de cada artefacto |
+
+Comprobacion (los tres hashes coinciden, verificado en la ejecucion):
+
+\sha256(parche exportado) = c68f82cde82f99a62b22d055be908c13fa957222114deecd589c88a7f718f59f
+diff_sha del gate (cand-01) = c68f82cde82f99a62b22d055be908c13fa957222114deecd589c88a7f718f59f
+diff_sha de decision.json    = c68f82cde82f99a62b22d055be908c13fa957222114deecd589c88a7f718f59f
+\
+Ademas hay un **artefacto binario persistido**: \ixtures/patch-demo/binary/sample.bin(contiene NUL y una cola no-UTF-8), usado por
+\BinaryPatchTest::test_persisted_binary_fixture_roundtrip\, de modo que el
+round-trip binario es reproducible desde un checkout limpio.
+
+\AuditArtifactsTest\ verifica todo lo anterior **en la CI**.
+
 ## 7. Resultados de tests ejecutados
 
 ```console
 $ python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180
-============ 112 passed, 1 skipped in 349.76s (0:05:49) ============
+============ 117 passed, 1 skipped in 268.35s (0:04:28) ================
 ```
 
-- **exit code: 0** · **112 passed, 0 failed, 1 skipped**.
+- **exit code: 0** · **117 passed, 0 failed, 1 skipped**.
 - El único skip es **explícito y con motivo**: `IsolationTest::test_manifest_includes_mode`
   — Windows no representa el bit de modo POSIX. En Linux ese test **sí** aserta.
 - Detalle por test (id, comando, exit code, versiones, commit, hashes de entrada,
@@ -285,8 +310,9 @@ Ningún fichero ajeno al alcance fue modificado. Los cambios del usuario previos
 7. **Las sondas con modelo no se ejecutaron** (coste): `subagent_tool` y
    `readonly_agent` siguen `blocked`.
 8. **El ledger no tiene ancla externa**: *tamper-evident*, no *tamper-proof*.
-9. **Los artefactos de los runs** viven en `.arena/` (ignorado por git): no son evidencia
-   versionada.
+9. **Los artefactos de los runs** viven en `.arena/` (ignorado por git). Mitigado: la
+   cadena de decision del E2E Patch y el parche round-trip estan versionados en
+   `reports/audit/artifacts/` (con `SHA256SUMS.txt` y tests que verifican la cadena).
 
 ---
 

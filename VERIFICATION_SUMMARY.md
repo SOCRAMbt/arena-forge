@@ -28,11 +28,11 @@ Git 2.51.0.windows.1 · OpenCode v2.0.32
 
 ---
 
-## Tests: 113 passed (exit 0)
+## Tests: 117 passed + 1 skip explicito (exit 0)
 
 ```console
 $ python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180
-======================= 113 passed in 347.93s (0:05:47) ========================
+============ 117 passed, 1 skipped in 268.35s (0:04:28) ============
 ```
 
 Detalle por test (comando, exit code, versiones, commit, hashes de entrada, artefactos):
@@ -124,6 +124,18 @@ Detalle por test (comando, exit code, versiones, commit, hashes de entrada, arte
 8. **La CI no se ha ejecutado** — configurada, no verificada.
 
 ---
+
+## Evidencia versionada (verificable por un tercero)
+
+`reports/audit/artifacts/` contiene la cadena de decisión del E2E Patch —
+`gates.json`, `decision.json`, `isolation.json`, `ledger.jsonl`, el parche
+round-trip y `SHA256SUMS.txt`. El test `AuditArtifactsTest` comprueba en la CI que
+`sha256(parche) == diff_sha del gate == diff_sha de decision.json` y que el parche
+aplica sobre un baseline limpio.
+
+Además, `fixtures/patch-demo/binary/sample.bin` es un artefacto binario
+persistido (NUL + cola no-UTF-8) que hace el round-trip binario reproducible
+desde un checkout limpio.
 
 ## Decisión final
 

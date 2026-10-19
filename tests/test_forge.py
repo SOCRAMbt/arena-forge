@@ -559,7 +559,7 @@ class BinaryPatchTest(unittest.TestCase):
                             isolation.diff_sha(b"a\n"))
 
     def test_capture_diff_refuses_symlinked_candidate(self):
-        self._write(self.base, "a.py", "print(1)\n")
+        self._write(self.base, "a.py", b"print(1)\n")
         outside = os.path.join(self.d, "outside.py")
         write(outside, "x\n")
         link = os.path.join(self.cand, "leak.py")
@@ -569,6 +569,91 @@ class BinaryPatchTest(unittest.TestCase):
             self.skipTest("symlinks no soportados en esta plataforma")
         with self.assertRaises(ForgeError):
             isolation.capture_diff(self.base, self.cand)
+
+    def test_persisted_binary_fixture_roundtrip(self):
+        """Round-trip con el fixture binario VERSIONADO en el repo.
+
+        Asi el round-trip binario es reproducible desde un checkout limpio, sin
+        depender de ficheros generados en tiempo de ejecucion.
+        """
+        fixture = os.path.join(FORGE_ROOT, "fixtures", "patch-demo", "binary",
+                               "sample.bin")
+        self.assertTrue(os.path.isfile(fixture), "falta el fixture binario")
+        with open(fixture, "rb") as fh:
+            original = fh.read()
+        self.assertIn(b"\x00", original, "el fixture debe contener NUL")
+        # El fixture NO es UTF-8 valido: debe clasificarse como binario.
+        self.assertTrue(isolation._is_binary_file(fixture))
+        self._write(self.base, "sample.bin", original)
+        self._write(self.cand, "sample.bin", original + b"\x00\x2a")
+        diff = isolation.capture_diff(self.base, self.cand)
+        self.assertIn(b"GIT binary patch", diff)
+        scratch = isolation.apply_diff_to_temp(diff, self.base)
+        self.addCleanup(shutil.rmtree, scratch, True)
+        with open(os.path.join(scratch, "sample.bin"), "rb") as fh:
+            self.assertEqual(fh.read(), original + b"\x00\x2a")
+
+
+# --------------------------------------- Evidencia de auditoria versionada
+class AuditArtifactsTest(unittest.TestCase):
+    """La evidencia empaquetada en `reports/audit/artifacts/` debe cuadrar.
+
+    Es lo que permite a un tercero verificar la cadena de decision sin
+    ejecutar el E2E.
+    """
+    ART = os.path.join(FORGE_ROOT, "reports", "audit", "artifacts")
+
+    def test_artifacts_are_present(self):
+        for name in ("gates.json", "decision.json", "isolation.json",
+                     "ledger.jsonl", "SHA256SUMS.txt"):
+            self.assertTrue(os.path.isfile(os.path.join(self.ART, name)),
+                            "falta el artefacto %s" % name)
+        patches = [f for f in os.listdir(self.ART) if f.endswith(".patch")]
+        self.assertEqual(len(patches), 1, "debe haber exactamente un parche")
+
+    def test_packaged_evidence_hash_chain_is_consistent(self):
+        """sha256(parche) == diff_sha del gate == diff_sha de la decision."""
+        with open(os.path.join(self.ART, "gates.json"), encoding="utf-8") as fh:
+            gates = json.load(fh)
+        with open(os.path.join(self.ART, "decision.json"), encoding="utf-8") as fh:
+            decision = json.load(fh)
+        winner = decision.get("winner_id")
+        self.assertTrue(winner, "la decision debe tener ganador")
+        patch = [os.path.join(self.ART, f) for f in os.listdir(self.ART)
+                 if f.endswith(".patch")][0]
+        patch_sha = sha_file(patch)
+        self.assertEqual(patch_sha, gates[winner]["diff_sha"])
+        self.assertEqual(patch_sha, decision["diff_sha"])
+
+    def test_packaged_evidence_checksums_match(self):
+        with open(os.path.join(self.ART, "SHA256SUMS.txt"), encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                digest, name = line.split("  ", 1)
+                if name == "fixture_binary_sha256":
+                    path = os.path.join(FORGE_ROOT, "fixtures", "patch-demo",
+                                        "binary", "sample.bin")
+                else:
+                    path = os.path.join(self.ART, name)
+                self.assertTrue(os.path.isfile(path), "falta %s" % name)
+                self.assertEqual(sha_file(path), digest,
+                                 "sha256 no coincide: %s" % name)
+
+    def test_packaged_patch_applies_to_a_clean_baseline(self):
+        """El parche versionado aplica sobre el baseline del fixture."""
+        patch = [os.path.join(self.ART, f) for f in os.listdir(self.ART)
+                 if f.endswith(".patch")][0]
+        tmp = tempfile.mkdtemp(prefix="forge-artifact-")
+        self.addCleanup(shutil.rmtree, tmp, True)
+        shutil.copy2(os.path.join(BUGGY, "stats.py"),
+                     os.path.join(tmp, "stats.py"))
+        r = subprocess.run(["git", "-c", "core.autocrlf=false", "-c",
+                            "core.eol=lf", "apply", "--check", patch],
+                           cwd=tmp, capture_output=True)
+        self.assertEqual(r.returncode, 0,
+                         r.stderr.decode("utf-8", "replace"))
 
 
 # ------------------------------------------- §16.7/§16.9/§16.19 gates

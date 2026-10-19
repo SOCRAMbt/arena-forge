@@ -55,6 +55,15 @@ Detalle: `reports/audit/final-audit.md`, `reports/audit/findings.md`.
 - `forge/integrity.py` — verificaciones de contenido ligadas al artefacto.
 - `reports/audit/` — baseline, hallazgos, matriz de aceptación, resultados de test,
   evidencia E2E e informe final.
+- **`reports/audit/artifacts/`** — evidencia **versionada** y verificable por un
+  tercero: `gates.json`, `decision.json`, `isolation.json`, `ledger.jsonl`, el
+  parche round-trip y `SHA256SUMS.txt`. La revisión 5 señaló que el único parche
+  verificable estaba excluido de git; cerrado. `AuditArtifactsTest` comprueba en la
+  CI que `sha256(parche) == diff_sha del gate == diff_sha de decision.json` y que
+  el parche aplica sobre un baseline limpio.
+- **`fixtures/patch-demo/binary/sample.bin`** — artefacto binario persistido
+  (contiene NUL y una cola no-UTF-8) para que el round-trip binario sea
+  reproducible desde un checkout limpio.
 - `.github/workflows/ci.yml` — CI Windows/Linux × Python 3.11/3.12 con smoke E2E y
   comprobación de árbol limpio. **Configurada, no ejecutada todavía.**
 

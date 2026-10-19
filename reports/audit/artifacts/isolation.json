@@ -1,0 +1,18 @@
+{
+ "root": "candidates",
+ "candidates": {
+  "cand-01": {
+   "dir": "candidates\\cand-01",
+   "realpath": "candidates/cand-01",
+   "realpath_original_basename": "cand-01"
+  },
+  "cand-02": {
+   "dir": "candidates\\cand-02",
+   "realpath": "candidates/cand-02",
+   "realpath_original_basename": "cand-02"
+  }
+ },
+ "shared": false,
+ "ok": true,
+ "problems": []
+}
