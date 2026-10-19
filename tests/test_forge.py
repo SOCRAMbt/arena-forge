@@ -306,6 +306,9 @@ class AgentETest(unittest.TestCase):
 class ReportTest(TempCwd):
     def _min_run(self, mode, status, gates=None):
         os.makedirs("run1", exist_ok=True)
+        # Crear directorios de candidatos
+        os.makedirs("run1/candidates/a001", exist_ok=True)
+        os.makedirs("run1/candidates/a002", exist_ok=True)
         arena = {"champion": "a001", "rounds": [
             {"n": 1, "bye": None, "matches": [
                 {"id": "r1-m01", "a": "a001", "b": "a002", "winner": "a001",
@@ -446,18 +449,22 @@ class ReportTest(TempCwd):
         self.assertIn("aislamiento no verificado", reason)
 
     def test_winner_when_all_evaluated_one_eligible(self):
-        """Todos evaluados, mismo harness, exactamente uno PASS → WINNER."""
+        """Todos evaluados, mismo harness, exactamente uno PASS -> WINNER."""
         d = self._min_run("patch", "EVALUATING",
                           {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "a" * 64,
-                                     "candidate_manifest_sha": "manifest_a001", "diff_sha": "diff_a001"},
-                           "a002": {"state": "FAIL", "exit_code": 1, "suite_sha": "a" * 64,
-                                     "candidate_manifest_sha": "manifest_a002", "diff_sha": "diff_a002"}})
-        # Asegurar isolation.json válido
+                                     "candidate_manifest_sha": "455e3615eb7fa54e97f61132e7f5e900bc038bdf39729b22cd90d3a7896bff8f", "diff_sha": "a" * 64},
+                            "a002": {"state": "FAIL", "exit_code": 1, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "30d7cce191de8ef3717f2d60bcf4d28a14dd881491e03d14d135025e08092569", "diff_sha": "b" * 64}})
+        # Copiar ficheros de fixture para que manifest coincida
+        shutil.copy2(r"C:\Users\Marcos\arena-forge\fixtures\patch-demo\candidate_fixed\stats.py", os.path.join(d, "candidates", "a001", "stats.py"))
+        shutil.copy2(r"C:\Users\Marcos\arena-forge\fixtures\patch-demo\baseline_buggy\stats.py", os.path.join(d, "candidates", "a002", "stats.py"))
+        # Asegurar isolation.json valido
         with open(os.path.join(d, "isolation.json"), "w", encoding="utf-8") as fh:
             json.dump({"ok": True, "candidates": {"a001": {}, "a002": {}}}, fh)
         dec, reason, eligible = report_mod.resolve(d)
         self.assertEqual(dec, "WINNER")
         self.assertEqual(eligible, ["a001"])
+
 
     def test_no_ship_when_all_fail(self):
         """Todos FAIL → NO_SHIP."""
@@ -475,19 +482,23 @@ class ReportTest(TempCwd):
         """Si el candidato cambia tras gate PASS, no WINNER."""
         d = self._min_run("patch", "EVALUATING",
                           {"a001": {"state": "PASS", "exit_code": 0, "suite_sha": "a" * 64,
-                                     "candidate_manifest_sha": "manifest1", "diff_sha": "diff1"},
-                           "a002": {"state": "FAIL", "exit_code": 1, "suite_sha": "a" * 64,
-                                     "candidate_manifest_sha": "manifest2", "diff_sha": "diff2"}})
-        # Asegurar isolation.json válido
+                                     "candidate_manifest_sha": "455e3615eb7fa54e97f61132e7f5e900bc038bdf39729b22cd90d3a7896bff8f", "diff_sha": "a" * 64},
+                            "a002": {"state": "FAIL", "exit_code": 1, "suite_sha": "a" * 64,
+                                     "candidate_manifest_sha": "30d7cce191de8ef3717f2d60bcf4d28a14dd881491e03d14d135025e08092569", "diff_sha": "b" * 64}})
+        # Copiar ficheros de fixture para que manifest coincida
+        shutil.copy2(r"C:\Users\Marcos\arena-forge\fixtures\patch-demo\candidate_fixed\stats.py", os.path.join(d, "candidates", "a001", "stats.py"))
+        shutil.copy2(r"C:\Users\Marcos\arena-forge\fixtures\patch-demo\baseline_buggy\stats.py", os.path.join(d, "candidates", "a002", "stats.py"))
+        # Asegurar isolation.json valido
         with open(os.path.join(d, "isolation.json"), "w", encoding="utf-8") as fh:
             json.dump({"ok": True, "candidates": {"a001": {}, "a002": {}}}, fh)
-        # Crear directorio de candidato real con manifest diferente
+        # Modificar candidato PASS tras gate
         os.makedirs(os.path.join(d, "candidates", "a001"), exist_ok=True)
         with open(os.path.join(d, "candidates", "a001", "stats.py"), "w", encoding="utf-8") as fh:
-            fh.write("def mean(x): return sum(x)/len(x)\n")
+            fh.write("def mean(x): return sum(x)/len(x) + 999\n")
         dec, reason, eligible = report_mod.resolve(d)
         self.assertEqual(dec, "NO_SHIP")
         self.assertIn("modificado tras gate", reason)
+
 
 
 # ----------------------------------------------- §16.11 presupuesto/perfiles

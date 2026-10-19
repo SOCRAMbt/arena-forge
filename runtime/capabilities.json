@@ -2,7 +2,7 @@
  "version": "opencode v2.0.32",
  "platform": "Windows-11-10.0.26200-SP0",
  "python": "3.12.4",
- "probed": 1792365714,
+ "probed": 1792380851,
  "capabilities": {
   "shell_tool": {
    "status": "verified",
@@ -51,7 +51,7 @@
   },
   "cwd_control": {
    "status": "verified",
-   "evidence": "subprocess con cwd=C:\\Users\\Marcos\\AppData\\Local\\Temp\\opencode_cwd_test_05sabqmt funciono",
+   "evidence": "subprocess con cwd=C:\\Users\\Marcos\\AppData\\Local\\Temp\\opencode_cwd_test_jqzblwl8 funciono",
    "by": "functional_test"
   },
   "state_on_disk": {

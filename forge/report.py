@@ -123,12 +123,20 @@ def resolve(run_dir, data=None):
             # aislamiento ya validado arriba para todos
         
         # P0-A.4: candidate_manifest_sha y diff_sha obligatorios en cada gate concluido
+        # Validar formato SHA256 (64 chars hex)
+        def _is_valid_sha256(val):
+            return isinstance(val, str) and len(val) == 64 and all(c in "0123456789abcdef" for c in val)
+
         for cid in expected_candidates:
             g = gates.get(cid, {})
             if not g.get("candidate_manifest_sha"):
                 return "NO_SHIP", "candidato %s sin candidate_manifest_sha en gate" % cid, []
+            if not _is_valid_sha256(g.get("candidate_manifest_sha")):
+                return "NO_SHIP", "candidato %s candidate_manifest_sha malformado: %s" % (cid, g.get("candidate_manifest_sha")), []
             if not g.get("diff_sha"):
                 return "NO_SHIP", "candidato %s sin diff_sha en gate" % cid, []
+            if not _is_valid_sha256(g.get("diff_sha")):
+                return "NO_SHIP", "candidato %s diff_sha malformado: %s" % (cid, g.get("diff_sha")), []
         
         # Ahora sí: evaluar elegibilidad solo si todos están completos
         eligible = sorted(c for c in expected_candidates if gates.get(c, {}).get("state") == "PASS")
@@ -136,6 +144,28 @@ def resolve(run_dir, data=None):
             return "NO_SHIP", "sin GateResult: la evaluacion no es confiable", []
         if not eligible:
             return ("NO_SHIP", "ningun candidato supera los gates obligatorios", [])
+        
+        # P0-A: Validar que TODOS los candidatos tienen directorio válido y manifest coincide
+        import os
+        for cid in expected_candidates:
+            g = gates.get(cid, {})
+            cdir = os.path.join(run_dir, "candidates", cid)
+            # Verificar que el directorio del candidato existe
+            if not os.path.isdir(cdir):
+                return "NO_SHIP", "candidato %s: directorio ausente" % cid, []
+            # Verificar que el realpath está dentro del run
+            real_cdir = os.path.realpath(cdir)
+            run_real = os.path.realpath(run_dir)
+            if not (real_cdir == run_real or real_cdir.startswith(run_real + os.sep)):
+                return "NO_SHIP", "candidato %s: directorio fuera del run" % cid, []
+            # Verificar manifest para TODOS los candidatos (no solo elegibles)
+            saved_manifest = gates.get(cid, {}).get("candidate_manifest_sha")
+            if saved_manifest:
+                from .isolation import candidate_manifest_sha
+                current_manifest = candidate_manifest_sha(cdir)
+                if current_manifest != saved_manifest:
+                    return "NO_SHIP", ("candidato %s modificado tras gate: manifest=%s gate=%s" %
+                                          (cid, candidate_manifest_sha(os.path.join(run_dir, "candidates", cid)), saved_manifest)), []
         
         # P0-05: validar que el manifest del candidato no ha cambiado desde el gate
         for cid in eligible:
