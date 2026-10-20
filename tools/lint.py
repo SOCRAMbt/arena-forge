@@ -53,29 +53,61 @@ def _iter_sources():
 
 
 def _bindings(tree):
-    """Bindings de nivel superior (funciones, clases, asignaciones, imports)."""
-    out = {}
+    """Bindings de nivel superior (funciones, clases, asignaciones, imports).
+
+    Matiz: `import urllib.error` y `import urllib.parse` enlazan el MISMO
+    nombre (`urllib`), porque el submódulo se importa dentro de su paquete.
+    Eso NO es una redefinicion: es el mismo paquete enlazado dos veces. Si dos
+    imports enlazan el mismo nombre来自 paquetes DISTINTOS (o con `as`), si es
+    un conflicto real.
+    """
+    defs = {}       # nombre -> lineas (funcion, clase, asignacion)
+    imports = {}    # nombre -> (lineas, paquetes)
+    conflicts = {}
+
+    def bind_def(name, lineno):
+        defs.setdefault(name, []).append(lineno)
+        all_lines = list(defs[name]) + list(imports.get(name, ([], set()))[0])
+        if len(all_lines) > 1:
+            conflicts.setdefault(name, []).extend(all_lines)
+
+    def bind_import(name, package, lineno):
+        prev_lines, prev_pkgs = imports.get(name, ([], set()))
+        same_pkg = bool(prev_pkgs) and prev_pkgs == {package}
+        imports.setdefault(name, ([], set()))[0].append(lineno)
+        imports[name][1].add(package)
+        if prev_lines and not same_pkg:
+            conflicts.setdefault(name, []).extend(prev_lines + [lineno])
+        if name in defs:
+            conflicts.setdefault(name, []).extend(defs[name] + [lineno])
 
     def scan(body):
         for node in body:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef,
                                  ast.ClassDef)):
-                out.setdefault(node.name, []).append(node.lineno)
+                bind_def(node.name, node.lineno)
             elif isinstance(node, ast.Assign):
                 for t in node.targets:
                     if isinstance(t, ast.Name):
-                        out.setdefault(t.id, []).append(node.lineno)
-            elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                        bind_def(t.id, node.lineno)
+            elif isinstance(node, ast.Import):
                 for alias in node.names:
-                    out.setdefault(alias.asname or alias.name.split(".")[0],
-                                   []).append(node.lineno)
+                    if alias.asname:
+                        bind_import(alias.asname, alias.asname, node.lineno)
+                    else:
+                        pkg = alias.name.split(".")[0]
+                        bind_import(pkg, pkg, node.lineno)
+            elif isinstance(node, ast.ImportFrom):
+                for alias in node.names:
+                    bound = alias.asname or alias.name.split(".")[0]
+                    bind_import(bound, node.module or "", node.lineno)
             else:
                 for attr in ("body", "orelse", "finalbody"):
                     sub = getattr(node, attr, None)
                     if isinstance(sub, list) and sub and isinstance(sub[0], ast.stmt):
                         scan(sub)
     scan(tree.body)
-    return out
+    return conflicts
 
 
 def lint(path):

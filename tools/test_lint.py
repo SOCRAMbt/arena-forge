@@ -31,6 +31,13 @@ class LintSelfTest(unittest.TestCase):
         errors, _ = self._lint("import os as cosa\nfrom sys import path as cosa\n")
         self.assertTrue(any("duplicado" in e for e in errors), errors)
 
+    def test_does_not_flag_submodule_imports_of_the_same_package(self):
+        """`import urllib.error` y `import urllib.parse` enlazan el MISMO
+        nombre: no es una redefinicion."""
+        errors, _ = self._lint("import urllib.error\nimport urllib.parse\n"
+                               "import urllib.request\n")
+        self.assertEqual(errors, [], errors)
+
     def test_detects_shell_true(self):
         errors, _ = self._lint("import subprocess\n"
                                 "def f():\n"
