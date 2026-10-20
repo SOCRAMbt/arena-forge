@@ -92,6 +92,14 @@ class LintSelfTest(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertTrue(any("silencioso" in w for w in warnings), warnings)
 
+    def test_path_on_a_different_drive_does_not_crash_the_lint(self):
+        """En los runners de GitHub Actions el repo esta en D:\\ y el temporal
+        en C:\\: `os.path.relpath` entre unidades distintas lanza ValueError."""
+        import unittest.mock as mock
+        with mock.patch("os.path.relpath", side_effect=ValueError("different mount")):
+            errors, _w = self._lint("def f():\n    return 1\n")
+        self.assertEqual(errors, [], "el lint no debe romperse por la unidad")
+
     # ----------------------------------------------------- el repo esta limpio
     def test_repository_has_no_lint_errors(self):
         errors = []

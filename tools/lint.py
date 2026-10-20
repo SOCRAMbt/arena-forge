@@ -122,8 +122,15 @@ def lint(path):
     warnings = []
     with io.open(path, encoding="utf-8") as fh:
         text = fh.read()
-    rel = os.path.relpath(path, REPO).replace("\\", "/")
-    is_test = any(rel.startswith(d + "/") for d in TEST_DIRS)
+    # `os.path.relpath` LANZA ValueError si las rutas estan en unidades
+    # distintas (Windows: repo en D:\ y temporal en C:\, que es justo lo que
+    # pasa en los runners de GitHub Actions). Se degrada al nombre de fichero.
+    try:
+        rel = os.path.relpath(path, REPO).replace("\\", "/")
+    except ValueError:
+        rel = os.path.basename(path)
+    is_test = any(rel.startswith(d + "/") for d in TEST_DIRS) or \
+        os.path.basename(rel).startswith("test")
 
     try:
         tree = ast.parse(text, filename=path)
