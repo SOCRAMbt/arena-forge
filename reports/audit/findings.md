@@ -188,7 +188,7 @@ La revisión 5 señaló (§B) que el único parche exportado verificable estaba
 
 | Requisito | Dónde | Verificado por |
 |---|---|---|
-| Parche round-trip del E2E | `reports/audit/artifacts/run-20261019-195822-s21.patch` | `AuditArtifactsTest::test_packaged_patch_applies_to_a_clean_baseline` |
+| Parche round-trip del E2E | `reports/audit/artifacts/run-20261019-210128-s31.patch` | `AuditArtifactsTest::test_packaged_patch_applies_to_a_clean_baseline` |
 | Cadena gates→decisión→ledger | `reports/audit/artifacts/{gates,decision,isolation}.json` + `ledger.jsonl` | `AuditArtifactsTest::test_packaged_evidence_hash_chain_is_consistent` |
 | Suma de verificación | `reports/audit/artifacts/SHA256SUMS.txt` | `AuditArtifactsTest::test_packaged_evidence_checksums_match` |
 | Artefacto binario de prueba | `fixtures/patch-demo/binary/sample.bin` | `BinaryPatchTest::test_persisted_binary_fixture_roundtrip` |

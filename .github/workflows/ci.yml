@@ -45,6 +45,7 @@ jobs:
       - name: CLI smoke (init + gates + report + apply)
         shell: bash
         run: |
+          set -euo pipefail
           python arena_forge.py plan --agents 2 --profile quick
           python arena_forge.py init --mode patch --agents 2 --seed 11 \
             --task "corregir el denominador en stats.py" \
@@ -55,8 +56,14 @@ jobs:
           python arena_forge.py gates --dir "$RUN"
           python arena_forge.py report --dir "$RUN"
           python arena_forge.py apply --dir "$RUN" --approve
-          git -c core.autocrlf=false apply --check "reports/$(basename "$RUN").patch"
-          echo "E2E patch: OK"
+          # El parche usa rutas RELATIVAS al directorio del baseline: se
+          # comprueba desde el repo destino con --directory.
+          PATCH="reports/$(basename "$RUN").patch"
+          git -c core.autocrlf=false -c core.eol=lf apply --check \
+            --directory=fixtures/patch-demo/baseline_buggy "$PATCH"
+          # El arbol principal debe quedar intacto:
+          git diff --exit-code -- fixtures/patch-demo/baseline_buggy
+          echo "E2E patch (asistido): OK"
 
       - name: CLI smoke (answer arena + NO_SHIP)
         shell: bash

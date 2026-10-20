@@ -1,5 +1,5 @@
 {
-  "decision_id": "dec-run-20261019-195822-s21-5bdcb5cc822b0a35",
+  "decision_id": "dec-run-20261019-210128-s31-baa077875f3ba126",
   "decision": "WINNER",
   "reason": "cand-01 unico elegible (todas las gates PASS, misma suite, suite_sha=19c538224e6b550760cd253dcda433a730da98760e854588e8a3aef8fc5c9570)",
   "winner_id": "cand-01",
@@ -9,7 +9,7 @@
   "suite_sha": "19c538224e6b550760cd253dcda433a730da98760e854588e8a3aef8fc5c9570",
   "diff_sha": "c68f82cde82f99a62b22d055be908c13fa957222114deecd589c88a7f718f59f",
   "candidate_manifest_sha": "03781b5c68f981339bcb69eae8b19a053718b2e9c3d1431fbd2919e3dfa3cd3c",
-  "ts": 1792450733,
-  "forge_repo_commit": "875c04ae1f7865c8043db651708d471c4a8d334e",
+  "ts": 1792454515,
+  "forge_repo_commit": "474d3dfe2ebbae5c4fbf2b72f0e0347e984edef7",
   "security_mode": "TRUSTED_CODE_ONLY"
 }

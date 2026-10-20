@@ -626,6 +626,10 @@ class AuditArtifactsTest(unittest.TestCase):
         self.assertEqual(patch_sha, decision["diff_sha"])
 
     def test_packaged_evidence_checksums_match(self):
+        """Los hashes del manifiesto se calculan sobre el contenido NORMALIZADO
+        a LF (igual que lo que git versiona), para que el manifiesto sea
+        valido en cualquier checkout y en cualquier plataforma."""
+        from forge.util import sha256_normalized
         with open(os.path.join(self.ART, "SHA256SUMS.txt"), encoding="utf-8") as fh:
             for line in fh:
                 line = line.strip()
@@ -638,8 +642,19 @@ class AuditArtifactsTest(unittest.TestCase):
                 else:
                     path = os.path.join(self.ART, name)
                 self.assertTrue(os.path.isfile(path), "falta %s" % name)
-                self.assertEqual(sha_file(path), digest,
+                self.assertEqual(sha256_normalized(path), digest,
                                  "sha256 no coincide: %s" % name)
+
+    def test_packaged_artifacts_are_line_ending_stable(self):
+        """Los artefactos de texto versionados no deben depender de la
+        plataforma: se escriben con LF en Windows y en POSIX."""
+        for name in ("decision.json", "gates.json", "isolation.json",
+                     "ledger.jsonl"):
+            p = os.path.join(self.ART, name)
+            with open(p, "rb") as fh:
+                data = fh.read()
+            self.assertNotIn(b"\r\n", data,
+                             "%s contiene CRLF: el hash no seria estable" % name)
 
     def test_packaged_patch_applies_to_a_clean_baseline(self):
         """El parche versionado aplica sobre el baseline del fixture."""

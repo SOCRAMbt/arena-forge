@@ -36,17 +36,38 @@ def sha_bytes(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def sha256_normalized(path):
+    """SHA-256 del contenido **normalizado a LF**.
+
+    Es el hash que se usa para los artefactos **versionados**: git normaliza
+    los ficheros de texto a LF al commitear, asi que el hash del working tree
+    (CRLF en Windows) no coincidiria con el de un checkout limpio. Normalizar
+    hace que el manifiesto de evidencia sea valido en cualquier maquina.
+    """
+    with open(path, "rb") as fh:
+        data = fh.read()
+    return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
+
+
 # --------------------------------------------------------------- escritura
 def atomic_write_text(path, text):
-    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    """Escritura atomica de texto.
+
+    `newline=""` evita la traduccion de \\n a \\r\\n en Windows: los
+    artefactos deben ser **byte-identicos en cualquier plataforma**, porque
+    su SHA-256 es la evidencia que se versiona y se compara entre maquinas.
+    """
+    path = os.path.abspath(path)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as fh:
+    with open(tmp, "w", encoding="utf-8", newline="") as fh:
         fh.write(text)
     os.replace(tmp, path)
 
 
 def append_line(path, text):
-    with open(path, "a", encoding="utf-8") as fh:
+    """Anade una linea. `newline=""` mantiene los bytes estables (ver arriba)."""
+    with open(path, "a", encoding="utf-8", newline="") as fh:
         fh.write(text if text.endswith("\n") else text + "\n")
 
 
@@ -263,7 +284,10 @@ def atomic_write_json(path, data):
     os.makedirs(dirn, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(dir=dirn, suffix=".tmp")
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as tmp:
+        # `newline=""`: los JSON se escriben byte-identicos en cualquier
+        # plataforma. Su SHA-256 es evidencia versionada: si cambiara con los
+        # finales de linea, el manifiesto no valdria en otro checkout.
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as tmp:
             json.dump(data, tmp, ensure_ascii=False, indent=2)
             tmp.flush()
             os.fsync(tmp.fileno())

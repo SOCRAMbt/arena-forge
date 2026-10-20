@@ -1,18 +1,16 @@
 {
- "root": "candidates",
- "candidates": {
-  "cand-01": {
-   "dir": "candidates\\cand-01",
-   "realpath": "candidates/cand-01",
-   "realpath_original_basename": "cand-01"
+  "root": "candidates",
+  "candidates": {
+    "cand-01": {
+      "dir": "candidates\\cand-01",
+      "realpath": "C:\\Users\\Marcos\\arena-forge\\.arena\\run-20261019-210128-s31\\candidates\\cand-01"
+    },
+    "cand-02": {
+      "dir": "candidates\\cand-02",
+      "realpath": "C:\\Users\\Marcos\\arena-forge\\.arena\\run-20261019-210128-s31\\candidates\\cand-02"
+    }
   },
-  "cand-02": {
-   "dir": "candidates\\cand-02",
-   "realpath": "candidates/cand-02",
-   "realpath_original_basename": "cand-02"
-  }
- },
- "shared": false,
- "ok": true,
- "problems": []
+  "shared": false,
+  "ok": true,
+  "problems": []
 }

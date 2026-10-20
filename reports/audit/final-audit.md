@@ -197,7 +197,7 @@ eports/audit/artifacts/\ contiene la cadena de decision del E2E Patch:
 | \decision.json\ | decision persistida: \decision_id\ (ligado al contenido), \winner_id\, \diff_sha\ |
 | \isolation.json\ | prueba de aislamiento de los workspaces |
 | \ledger.jsonl\ | historial append-only con cadena de hashes |
-| un-20261019-195822-s21.patch\ | el parche round-trip exportado (parche Git real) |
+| un-20261019-210128-s31.patch\ | el parche round-trip exportado (parche Git real) |
 | \SHA256SUMS.txt\ | SHA-256 de cada artefacto |
 
 Comprobacion (los tres hashes coinciden, verificado en la ejecucion):
