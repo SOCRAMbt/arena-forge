@@ -192,55 +192,141 @@ def save_capabilities(caps, version):
 _SKILL_LIST_CACHE = {}
 
 
-def _test_skill_load():
-    """Comprueba que la skill del repo tiene frontmatter valido y es descubrible.
+def _skill_api_probe(timeout=45):
+    """Descubre la skill del repo con un servidor ENRAIZADO en el repo.
 
-    Dos evidencias:
-      (a) frontmatter `name` == nombre del directorio y `description` no vacia
-          (contrato del cargador de skills de OpenCode V2);
-      (b) el runtime la lista por ID (si el servidor responde).
-    Sin (b) el veredicto es `inconclusive`, no `verified`.
+    Por que servidor dedicado: el servidor de fondo de OpenCode puede estar
+    enraizado en otro directorio (el home del usuario). En ese caso
+    `/api/skill` lista las skills de ESE arbol y la del repo aparece como "no
+    encontrada" aunque este bien. Para medir "la skill aparece y se carga con
+    el ID/ruta exactos" hay que arrancar un servidor en el repo.
+
+    El servidor anuncia una contrasena ALEATORIA en su stdout; se lee de ahi.
+    Devuelve (ok, info).
     """
-    skill_dir = os.path.join(SKILLS_DIR, "arena-forge")
-    skill_file = os.path.join(skill_dir, "SKILL.md")
-    if not os.path.isfile(skill_file):
-        return False, "skill del repo ausente: %s" % skill_file, "repo"
+    import base64
+    import socket
+    import subprocess
+    import tempfile
+    import time
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    exe = shutil.which("opencode")
+    if not exe:
+        return False, {"reason": "opencode no esta en PATH"}
+    skill_id = "arena-forge"
+    expected = os.path.join(SKILLS_DIR, skill_id, "SKILL.md")
+
+    s = socket.socket()
+    s.bind(("127.0.0.1", 0))
+    port = s.getsockname()[1]
+    s.close()
+
+    cmd = [exe, "serve", "--port", str(port), "--hostname", "127.0.0.1"]
+    if exe.lower().endswith((".cmd", ".bat")):
+        cmd = [os.environ.get("COMSPEC", "cmd.exe"), "/c", exe] + cmd[1:]
+    fd, log_path = tempfile.mkstemp(prefix="opencode-serve-", suffix=".log")
+    os.close(fd)
+    proc = None
     try:
-        with open(skill_file, encoding="utf-8") as fh:
-            text = fh.read()
+        with open(log_path, "w", encoding="utf-8", errors="replace") as log:
+            proc = subprocess.Popen(cmd, cwd=HERE, stdout=log, stderr=subprocess.STDOUT)
     except OSError as exc:
-        return False, "skill ilegible: %s" % exc, "repo"
-    if not text.startswith("---"):
-        return False, "SKILL.md sin frontmatter (OpenCode lo omite)", "repo"
-    end = text.find("\n---", 3)
-    if end < 0:
-        return False, "frontmatter sin cerrar", "repo"
-    front = text[3:end]
-    name = None
-    description = None
-    for line in front.splitlines():
-        if line.startswith("name:"):
-            name = line.split(":", 1)[1].strip()
-        elif line.startswith("description:"):
-            description = line.split(":", 1)[1].strip()
-    if not name or name != os.path.basename(skill_dir):
-        return False, ("frontmatter sin `name` valido (esperado %r, encontrado %r)"
-                       % (os.path.basename(skill_dir), name)), "repo"
-    if not description:
-        return False, "frontmatter sin `description`", "repo"
-    frontmatter_ok = ("frontmatter valido: name=%s description=%d chars"
-                      % (name, len(description)))
-    # (b) el runtime la lista? (consulta cacheada: es lenta)
-    if "listed" not in _SKILL_LIST_CACHE:
-        rc, out = _run_opencode(["api", "GET", "/api/skill"], timeout=20, cwd=HERE)
-        _SKILL_LIST_CACHE["listed"] = (rc == 0 and "arena-forge" in out)
-        _SKILL_LIST_CACHE["rc"] = rc
-    if _SKILL_LIST_CACHE["listed"]:
-        return True, "%s; listada por el runtime por ID" % frontmatter_ok, "opencode"
-    return (False,
-            "%s; el runtime no la listo (rc=%s). La ENFORCACION de carga por ID "
-            "no esta probada" % (frontmatter_ok, _SKILL_LIST_CACHE.get("rc")),
-            "opencode")
+        try:
+            os.unlink(log_path)
+        except OSError:
+            pass
+        return False, {"reason": "no se pudo arrancar el servidor: %s" % exc}
+    try:
+        password = None
+        deadline = time.time() + timeout
+        while time.time() < deadline and password is None:
+            try:
+                with open(log_path, encoding="utf-8", errors="replace") as fh:
+                    m = re.search(r"server password\s+(\S+)", fh.read())
+                if m:
+                    password = m.group(1)
+            except OSError:
+                pass
+            if password is None:
+                time.sleep(0.3)
+        if not password:
+            return False, {"reason": "el servidor no anuncio su contrasena"}
+        # esperar el puerto
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            try:
+                with socket.create_connection(("127.0.0.1", port), timeout=1):
+                    break
+            except OSError:
+                time.sleep(0.3)
+        else:
+            return False, {"reason": "el servidor no abrio el puerto %d" % port}
+
+        url = "http://127.0.0.1:%d/api/skill?directory=%s" % (
+            port, urllib.parse.quote(HERE, safe=""))
+        token = base64.b64encode(("opencode:%s" % password).encode("utf-8")).decode()
+        skills = []
+        last = None
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            try:
+                req = urllib.request.Request(url, headers={
+                    "Authorization": "Basic %s" % token,
+                    "Accept": "application/json"})
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    payload = json.loads(resp.read().decode("utf-8", "replace"))
+            except (urllib.error.URLError, OSError, ValueError) as exc:
+                last = exc
+                time.sleep(1.0)
+                continue
+            if isinstance(payload, dict):
+                payload = payload.get("data") or payload.get("skills") or []
+            if not isinstance(payload, list):
+                return False, {"reason": "formato de /api/skill inesperado"}
+            skills = payload
+            if any(x.get("id") == skill_id for x in skills):
+                break
+            time.sleep(1.0)
+        else:
+            return False, {"reason": "la skill %r no aparecio en /api/skill "
+                                     "(%d listadas)" % (skill_id, len(skills)),
+                           "total_skills": len(skills)}
+        found = [x for x in skills if x.get("id") == skill_id][0]
+        path = found.get("path") or ""
+        same = os.path.normcase(os.path.abspath(path)) == os.path.normcase(expected)
+        return True, {"id": skill_id, "name": found.get("name"), "path": path,
+                      "expected_path": expected, "path_matches_repo": same,
+                      "total_skills": len(skills)}
+    finally:
+        if proc is not None:
+            try:
+                proc.terminate()
+                proc.wait(timeout=10)
+            except Exception:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+        try:
+            os.unlink(log_path)
+        except OSError:
+            pass
+
+
+def _test_skill_load():
+    """La skill del repo aparece y se carga con su ID y ruta EXACTOS."""
+    ok, info = _skill_api_probe()
+    if not ok:
+        return False, info.get("reason", "sonda de skill fallida"), "opencode"
+    if not info.get("path_matches_repo"):
+        return (False, "la skill aparece pero con otra ruta: %s (esperada %s)"
+                % (info.get("path"), info.get("expected_path")), "opencode")
+    return (True, "skill %s cargada por ID desde %s (%d skills en el runtime)"
+            % (info["id"], _rel_to_repo(info["path"]),
+               info.get("total_skills", 0)), "opencode")
 
 
 def _test_subagent_foreground(allow_model_calls=False):

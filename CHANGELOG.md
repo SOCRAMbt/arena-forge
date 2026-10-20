@@ -1,6 +1,56 @@
 # CHANGELOG
 
-## 0.3.0 — 2026-10-19 — Auditoría forense y cierre técnico
+## 0.3.0 — 2026-10-19 — Auditoría forense, cierre técnico y recertificación
+
+### Contrato de referencia versionado
+
+- `docs/contract/ARENA_FORGE_ESPECIFICACION_TECNICA_INTEGRAL.md` (SHA-256
+  `96027434…D273`): el contrato estaba en `Downloads/` y **no** en el repo, lo que
+  había hecho imposible certificar AF-AC/§16. Ahora la auditoría es
+  **reproducible contra el texto literal**.
+- Matriz de aceptación **generada por código** (`reports/audit/compute_acceptance.py`
+  + `acceptance-data.json`) con un test que falla si el `.md` se desincroniza.
+- `reports/audit/acceptance-matrix.md` incluye la matriz de trazabilidad §21
+  (AF-PR-001..010).
+
+### Cerrado en esta iteración
+
+- **AF-AC-003 (skill)**: era `inconclusive` porque el servidor de fondo de OpenCode
+  puede estar enraizado en otro árbol. `tools/probe_skill.py` arranca un servidor
+  **enraizado en el repo** (leyendo la contraseña aleatoria que anuncia en su
+  stdout) y verifica ID y ruta exactos: `arena-forge` en
+  `.opencode/skills/arena-forge/SKILL.md`. `skills_native` pasa a `verified`.
+- **AF-AC-005 (Answer Arena E2E)**: `forge/stub_agent.py` es un doble de costura
+  determinista y sin coste (§13.4 lo exige) que juega el papel del subagente en el
+  camino real de producción. `tests/test_e2e_answer_arena.py` (9 tests) cubre
+  4 candidatos, ataques, defensas, jueces, collect, advance, decisión e informe,
+  con **controles negativos**: `check` falla sin salidas, `advance` falla sin
+  veredictos, el ganador se **re-deriva** de forma independiente con
+  `bracket.decide`, reanudar no duplica rondas ni reescribe salidas y el stub es
+  determinista. La calidad es **heterogénea** para que el juez discrimine de
+  verdad. Todo artefacto va etiquetado (`stub_manifest.json`, banner `STUB`).
+- **§16.5 (interrupción a mitad de fase)**: test específico con reanudación sin
+  duplicación.
+- **AF-AC-012 (lint/typecheck/build)**: `tools/lint.py` (lint propio sin
+  dependencias, con autotests y control negativo) y build con `compileall`;
+  `mypy`/`ruff`/`pyright` se declaran **NOT_RUN** con su causa exacta.
+- **CI verde**: GitHub Actions run 3 (`93f7f2d`), `conclusion: success` en las 4
+  legs (Windows/Linux × Python 3.11/3.12) desde checkout limpio.
+- **Evidencia portable**: `atomic_write_json`/`append_line` escriben con `newline=""`
+  (LF en cualquier plataforma) y `sha256_normalized()` permite que el manifiesto
+  `SHA256SUMS.txt` sea válido en cualquier checkout.
+- **ADR-006** (aislamiento): qué se garantiza y qué NO, con el modo
+  `TRUSTED_CODE_ONLY` declarado.
+
+### Veredicto
+
+**NO-GO**: 16 PASS, 2 PARTIAL, 0 FAIL/NOT_RUN/BLOCKED (ponderado 94.4 %). NO-GO por
+dos razones verificables: falta la **reproducción por un tercero independiente**
+(§23 no permite que el coordinador certifique su propio éxito) y el **aislamiento
+es de nivel de ruta, no de sistema operativo**. La eficacia adaptativa de E sigue
+siendo una hipótesis pendiente (§23).
+
+## 0.3.0 — Auditoría forense y cierre técnico
 
 Estado global de esta revisión: **NO-GO** (2 P0 abiertos, 2 criterios NOT_RUN).
 Detalle: `reports/audit/final-audit.md`, `reports/audit/findings.md`.

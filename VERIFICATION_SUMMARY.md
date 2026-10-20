@@ -11,41 +11,18 @@ Git 2.51.0.windows.1 · OpenCode v2.0.32
 
 ## 🔴 Estado global: **NO-GO**
 
-**No se declara COMPLETE ni 100 %.** Motivos:
+16 PASS · 2 PARTIAL · 0 FAIL · 0 NOT_RUN · 0 BLOCKED. Ponderado **94.4 %**.
 
-1. **AF-AC-010 en FAIL**: no existe frontera de sistema operativo para el código del
-   candidato. Modo declarado `TRUSTED_CODE_ONLY`.
-2. **Contrato funcional ausente**: `ARENA_FORGE_ESPECIFICACION_TECNICA_INTEGRAL.md` no está
-   en el checkout → AF-AC/§16 no certificables de forma autoritativa (BLOCKED).
-3. **AF-AC-016 en NOT_RUN**: la eficacia adaptativa de E no está medida (declarado, no
-   fabricado).
-4. **CI no ejecutada**: `.github/workflows/ci.yml` se crea en esta auditoría pero no corre
-   hasta el push.
+NO-GO por dos razones verificables:
 
-**Matriz completa y cálculo por código:** [`reports/audit/acceptance-matrix.md`](reports/audit/acceptance-matrix.md).
-**Hallazgos con reproducción y evidencia:** [`reports/audit/findings.md`](reports/audit/findings.md).
-**Decisión final:** [`reports/audit/final-audit.md`](reports/audit/final-audit.md).
+1. **§23 (regla final):** el coordinador no puede ser la unica autoridad que
+   certifique su propio exito. Falta la reproduccion por un **tercero
+   independiente** (AF-AC-014 -> PARTIAL).
+2. **Aislamiento de nivel OS (AF-AC-010 -> PARTIAL):** no hay Job Object,
+   AppContainer, usuario de minimos privilegios ni red bloqueada. Modo
+   `TRUSTED_CODE_ONLY` declarado (ADR-006, THREAT_MODEL).
 
----
-
-## Tests: 117 passed + 1 skip explicito (exit 0)
-
-```console
-$ python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180
-============ 117 passed, 1 skipped in 268.35s (0:04:28) ============
-```
-
-Detalle por test (comando, exit code, versiones, commit, hashes de entrada, artefactos):
-[`reports/audit/test-results.json`](reports/audit/test-results.json).
-
-- Los tests **no escriben dentro del repo**: `adapter.probe(persist=False)` y
-  `bench_mod.run(out_file=...)`.
-- Las rutas se derivan de `Path(__file__).resolve()`: **sin rutas absolutas del host**
-  (verificado por `PortabilityTest::test_no_absolute_host_paths_in_tests`).
-- Los manifiestos se **calculan** en runtime: no hay constantes que dependan de los
-  finales de linea del checkout.
-
----
+Detalle completo: [`reports/audit/final-audit.md`](reports/audit/final-audit.md).
 
 ## P0 — estado tras la remediación
 

@@ -1,347 +1,315 @@
-# Auditoría forense — Informe final
+# Arena Forge — Entrega final (§22 del contrato)
 
-**Repositorio:** `C:\Users\Marcos\arena-forge`
-**Remoto:** `https://github.com/SOCRAMbt/arena-forge` → `origin/main`
-**Fecha de ejecución:** 2026-10-19 (America/Argentina)
-**Auditor:** Staff Engineer principal (integrador único) + 4 revisores read-only
-independientes (seguridad, tests/E2E/CI, integración OpenCode, integridad de runtime)
+**Contrato de referencia:** `docs/contract/ARENA_FORGE_ESPECIFICACION_TECNICA_INTEGRAL.md`
+(SHA-256 `960274344a32b337cd30438a85a31d09c4e63204f822902a96057d250634d273`).
+**Entrega:** 2026-10-19 · **Estado global: NO-GO** (ver §0).
+
+> §22: *"No declarar éxito por intención, código escrito ni opinión de los
+> agentes. Presentar artefactos para que un tercero lo compruebe."* Y §23:
+> *"no permitir que el coordinador sea la única autoridad que certifique su
+> propio éxito."*
 
 ---
 
-## 1. Estado del repositorio
+## 0. Veredicto, y por qué NO es COMPLETE
 
-```console
-$ git rev-parse HEAD
-875c04ae1f7865c8043db651708d471c4a8d334e
-
-$ git branch --show-current
-main
-
-$ git rev-parse --abbrev-ref --symbolic-full-name '@{u}'
-origin/main
-
-$ git rev-list --left-right --count '@{u}...HEAD'
-0	0
-
-$ git ls-remote origin
-875c04ae1f7865c8043db651708d471c4a8d334e	HEAD
-875c04ae1f7865c8043db651708d471c4a8d334e	refs/heads/main
-```
-
-| Dato | Valor |
+| | |
 |---|---|
-| HEAD | `875c04ae1f7865c8043db651708d471c4a8d334e` |
-| Rama | `main` |
-| Upstream | `origin/main` |
-| Divergencia | 0 ahead / 0 behind |
-| Árbol | **DIRTY**: 27 ficheros trackeados modificados + 6 rutas nuevas (todas intencionales) |
-| Remoto == local | **SÍ** (verificado con `ls-remote`, sin fetch ni pull) |
+| **Estado** | **NO-GO** — 16 PASS, 2 PARTIAL, 0 FAIL, 0 NOT_RUN, 0 BLOCKED. Ponderado **94.4 %**; por área **88.1 %** |
+| **Por qué no COMPLETE** | Dos razones, ambas verificables y ninguna subsanable por mí:<br>1. **§23 (regla final):** el coordinador no puede ser la única autoridad que certifique su propio éxito. Falta la **reproducción por un tercero independiente** (AF-AC-014 → PARTIAL).<br>2. **AF-AC-010 → PARTIAL:** el aislamiento de los candidatos es a nivel de ruta y proceso, **no de sistema operativo**. No hay Job Object, AppContainer, usuario de mínimos privilegios ni red bloqueada. El modo `TRUSTED_CODE_ONLY` está declarado, pero un criterio en PARTIAL impide `COMPLETE` (§18). |
+| **Qué NO se declara** | Eficacia adaptativa de E demostrada (no: es una hipótesis pendiente, §23). Calidad de un modelo real (no: el E2E de Answer usa un stub determinista). Aislamiento de nivel OS (no: sin frontera). |
+| **Cálculo** | Generado por código: `python reports/audit/compute_acceptance.py --write`. Un test (`AcceptanceMatrixTest::test_matrix_markdown_matches_the_data`) falla si el `.md` se desincroniza de los datos. |
 
-### Reconciliación de la discrepancia de HEAD
-
-La auditoría externa استخدم `84ab02e` como referencia y afirmaba que
-`_binary_diff_line` / `_apply_binary_diff` **no existían** en ese commit.
-
-**Resuelto:** `84ab02e` es un ancestro directo. El commit `875c04a`
-("P0-A/P0-C: Binary diffs with base64 encoding and proper apply") lo supera y **sí**
-modifica `forge/isolation.py`. Las funciones existen en `875c04a`
-(`forge/isolation.py:71` y `:260`).
-
-**Pero la existencia de las funciones no era el problema.** La auditoría-forense
-detectó que la implementación de `875c04a` era **peor** de lo que sugería su nombre:
-usaba un formato de parche binario **inventado** que `git apply` rechaza, y su parser
-descartaba silenciosamente los hunks de texto en un diff mixto. Corregido en esta
-remediación (ver `findings.md` §P0-BIN).
-
-### Higiene del árbol
-
-150 ficheros scratch de sesiones anteriores (`fix_*.py`, `test_binary*.py`, `old_*.txt`,
-`reports/run-*.patch`) se **movieron** (no se borraron) a
-`%LOCALAPPDATA%\Temp\opencode\arena-forge-scratch-20261019\` con un manifiesto
-`SHA256SUMS.txt`. No se ejecutó `git clean`, `git reset`, `git restore` ni `git checkout`.
+Matriz completa: [`acceptance-matrix.md`](acceptance-matrix.md) ·
+Hallazgos con reproducción: [`findings.md`](findings.md) ·
+Resultados por test: [`test-results.json`](test-results.json).
 
 ---
 
-## 2. Estado global: **NO-GO**
+## 1. Qué se construyó y qué no
 
-**No se declara COMPLETE ni 100 %.** Bloqueos:
+### Construido y verificado
 
-| # | Bloqueo | Severidad | Por qué no se puede cerrar aquí |
-|---|---|---|---|
-| **BLQ-1** | Sin frontera de sistema operativo para el código del candidato | **P0** | Windows 11 sin Job Object / AppContainer / usuario de privilegios mínimos / red bloqueada. Un scratch con entorno filtrado **no es un sandbox**. El modo `TRUSTED_CODE_ONLY` está declarado en el código, en cada `GateResult`, en `verify` y en `apply`. |
-| **BLQ-2** | Contrato funcional ausente | **P0** | `ARENA_FORGE_ESPECIFICACION_TECNICA_INTEGRAL.md` no está en el checkout. AF-AC-001..018 y §16 no son certificables de forma autoritativa. |
-| **BLQ-3** | CI no ejecutada | P1 | `.github/workflows/ci.yml` se crea aquí; no corre hasta el push. AF-AC-012 = configurada-y-no-verificada. |
-| **BLQ-4** | AF-AC-016 sin medir | P1 | Comparación real single_agent vs fixed_orchestration vs arena_e_adaptive con repeticiones. Requiere ejecuciones vivas con coste. **No se estima.** |
-| **BLQ-5** | Sondas que requieren modelo | P1 | `subagent_tool` y `readonly_agent` quedan `blocked`: probar la creación de un subagente nativo o una denegación real cuesta tokens no autorizados. |
-
----
-
-## 3. Tabla de estados por criterio
-
-Matriz completa y cálculo: [`acceptance-matrix.md`](acceptance-matrix.md).
-
-| Estado | Recuento | % |
+| Sistema | Qué hace | Evidencia |
 |---|---|---|
-| PASS | 7 | 38.9 % |
-| PARTIAL | 8 | 44.4 % |
-| FAIL | 1 | 5.6 % |
-| BLOCKED | 0 | 0.0 % |
-| NOT_RUN | 2 | 11.1 % |
-| **Equivalente ponderado** | — | **61.1 %** |
+| **Parche canónico** | `git diff --binary` real (formato literal/delta de Git), no un formato inventado. Aplicación con `git apply --check` + `git apply`. | `tests/test_forge.py::BinaryPatchTest` (13 tests) |
+| **Integridad del artefacto** | Suite, baseline, manifiesto y diff se **recalculan** en `report`, `verify` y `apply`. `sha256(parche exportado) == diff_sha del gate == diff_sha de decision.json`. | `reports/audit/artifacts/` + `ApplyIntegrityTest` |
+| **Gate no falsificable** | Exige informe JUnit **y** marcador de finalización (`atexit`, que `os._exit` no ejecuta) **y** recuento mínimo de tests. | `GatesTest::test_gate_rejects_candidate_forced_exit_zero` (+ control) |
+| **Symlinks fail-closed** | Symlink externo/roto/directorio → `ForgeError`; el gate marca `BLOCKED/unsafe_candidate`. | `IsolationTest` (10 tests) |
+| **Política de exclusión única** | La misma política para manifiesto, parche y scratch del gate (antes los `.pyc` se ejecutaban sin estar en ningún hash). | `isolation.py::EXCLUDED_*` |
+| **Decisión ligada al contenido** | `decision_id` = hash del contenido de la decisión; `apply` lo recalcula y **aborta** si el estado cambió entre `report` y `apply`. Un run NO_SHIP ya no puede producir WINNER. | `ApplyIntegrityTest` + `report.py::resolve_full` |
+| **Presupuesto de E atómico** | Reserva bajo **lock de sistema operativo** antes de crear el job; idempotente; libera la reserva en todo fallo. | `AgentETest::test_two_jobs_cannot_exceed_the_remaining_budget` |
+| **Aprobación humana efectiva** | Sin registro **ligado** (decision_id, run_id, action, targets, coste, `approved_by`) la decisión queda `awaiting_approval` y no ejecuta. | `AgentETest::test_human_approval_required_blocks_execution` |
+| **Agente stub determinista** | Doble de costura para el E2E de Answer: mismo camino de producción, coste 0, **calidad heterogénea** para que el juez discrimine de verdad. | `forge/stub_agent.py` + `tests/test_e2e_answer_arena.py` |
+| **Lint propio + build** | Lint sin dependencias externas (AST) con **autotests y control negativo**; build = `compileall`; `mypy`/`ruff` declarados NOT_RUN con causa. | `tools/lint.py`, `tools/test_lint.py` |
+| **Sonda de skill** | Servidor **enraizado en el repo** (el de fondo puede estar en otro árbol) → la skill se carga con ID y ruta exactos. | `tools/probe_skill.py` → `skills_native=verified` |
+| **CI real** | Windows/Linux × Python 3.11/3.12, verde en las 4 legs desde checkout limpio. | GitHub Actions run 3 (`93f7f2d`) |
 
-> Números **ejecutados** por `reports/audit/compute_acceptance.py` sobre
-> `reports/audit/acceptance-data.json`. No están calculados a mano.
+### NO construido (declarado, no simulado)
 
-> **El porcentaje no anula los gates P0.** AF-AC-010 está en **FAIL** y AF-AC-016 en
-> **NOT_RUN**. El estado global es NO-GO.
-
-### Por área (pesos declarados, cálculo en código)
-
-| Área | Peso | Criterios | Ponderado | Contribución |
-|---|---|---|---|---|
-| integridad | 25 % | 4 | 100.0 % | 25.00 |
-| seguridad | 20 % | 1 | 0.0 % | 0.00 |
-| runtime | 20 % | 3 | 66.7 % | 13.33 |
-| tests | 15 % | 4 | 37.5 % | 5.63 |
-| opencode | 10 % | 2 | 50.0 % | 5.00 |
-| documentacion | 10 % | 3 | 83.3 % | 8.33 |
-| benchmark | 0 % | 1 | (no medido, sin peso) | 0.00 |
-| **GLOBAL** | 100 % | 18 | — | **57.3 %** |
-
-Metodología: cada área se puntúa por la fracción de criterios con el estado más alto
-alcanzable (`PASS`=1, `PARTIAL`=0.5, `FAIL`=0, `NOT_RUN`=0). El global es la suma de
-`peso × ponderado` y **no puede ocultar un P0 abierto**. Los números y la partición
-salen de `compute_acceptance.py`; el reparto criterio→área está en `acceptance-data.json`.
-
----
-
-## 4. Claims probados, refutados y no evaluables
-
-### Refutados por esta auditoría (el código NO hacía lo que se afirmaba)
-
-| Claim previo | Realidad | Evidencia |
+| Sistema | Por qué no | Qué haría falta |
 |---|---|---|
-| "El parche binario es un parche Git" | Era un formato **inventado** (base64 estándar con cabecera `GIT binary patch`); `git apply` lo rechaza | `BinaryPatchTest::test_git_apply_check_accepts_generated_patch` |
-| "El parche aplica el cambio completo" | El parser binario **descartaba los hunks de texto** de un diff mixto | `BinaryPatchTest::test_mixed_diff_keeps_the_text_hunk` |
-| "`apply` aplica el candidato juzgado" | Aplicaba `eligible[0]`, **otro** candidato | `ApplyIntegrityTest::test_apply_exports_the_judged_winner_not_the_first_eligible` |
-| "`diff_sha` acredita el diff evaluado" | Solo se validaba el **formato**; nunca se recalculaba | `ReportTest::test_no_ship_when_diff_sha_does_not_match_the_recomputed_diff` |
-| "`suite_sha` protege la suite" | Se comparaba con **otro valor almacenado**; la suite viva no se releía | `ReportTest::test_no_ship_when_suite_was_tampered_after_gates` |
-| "`apply` verifica el baseline" | Era `pass  # TODO` y `target_baseline_dir` **nunca se guardaba**: código muerto | `ApplyIntegrityTest::test_apply_blocks_when_frozen_baseline_changed` |
-| "El presupuesto de E se respeta" | Se gastaba **después** del job, sin lock: 2 jobs con 1 llamada → `calls_spent=2` | `AgentETest::test_two_jobs_cannot_exceed_the_remaining_budget` |
-| "La aprobación humana se exige" | `requires_human_approval` solo se validaba por **tipo**; nunca se aplicaba | `AgentETest::test_human_approval_required_blocks_execution` |
-| "El gate decide objetivamente" | El **candidato** podía fabricar el PASS (`os._exit(0)` en el import) | `GatesTest::test_gate_rejects_candidate_forced_exit_zero` |
-| "La skill nativa está incluida" | Sin frontmatter: **OpenCode la omitía** | `PortabilityTest::test_repo_skill_has_opencode_frontmatter` |
-| "Los agentes tienen mínimo privilegio" | Las reglas `allow` estaban **muertas** (orden invertido): no podían escribir nada | `PortabilityTest::test_agent_permission_rules_put_allow_last` |
-| "6 capacidades verificadas" | 4 no tenían prueba real; 3 `unsupported` eran por sintaxis inválida | `runtime/capabilities.json` |
-| "Los symlinks se validan" | Los inseguros se **omitían en silencio** | `IsolationTest::test_unsafe_symlink_blocks_manifest` |
-| "44/44 PASS es portable" | 2 tests fallaban en Linux/otra cuenta; los manifiestos dependían de CRLF | `PortabilityTest::test_no_absolute_host_paths_in_tests` |
-| "todos FAIL → NO_SHIP" | La rama **nunca** se alcanzaba (falso PASS) | `ReportTest::test_no_ship_when_every_candidate_fails_its_gate` |
-| "CI configurada" | No existía `.github/` | `.github/workflows/ci.yml` (nuevo) |
-
-### Confirmados (ya eran ciertos y siguen siéndolo, con test)
-
-- Los gates preceden al score; el juez no puede anular un gate fallido.
-- El árbol principal nunca se muta en `apply`.
-- El HTML del informe escapa todo el contenido.
-- El ledger detecta manipulación (cadena de hashes).
-- El manifiesto detecta la modificación del candidato tras el gate.
-- El scheduler es determinista con el mismo seed.
-
-### No evaluables con el material disponible
-
-- Conformidad literal con AF-AC-001..018, AF-PR y §16 (**BLQ-2**).
-- Contención real del código no confiable (**BLQ-1**).
-- Eficacia adaptativa de E frente a orquestación fija (**BLQ-4**).
-- Enforzamiento real de permisos por el runtime de OpenCode (**BLQ-5**).
+| **Sandbox de sistema operativo** | Windows sin Job Object/AppContainer en uso; requiere privileges para red y filesystem. | Admin rights (o un contenedor). Un Job Object **no** requiere elevación: acota memoria/PIDs/árbol. |
+| **Despacho real de agentes desde el runtime** | El runtime escribe briefs; quien lanza las olas es el orquestador o el operador. | Implementar el `subagent`/dispatch y poblar `session_ref`/`output_ref`. |
+| **Sondas que requieren modelo** (`subagent_tool`, `readonly_agent`) | Coste no autorizado. | `adapter.probe(allow_model_calls=True)`. |
+| **Eficacia adaptativa de E** | §23: solo se demuestra con comparación reproducible y repetida. | Dataset versionado × 3 métodos × repeticiones. |
+| **Reproducción por un tercero** | §23: el coordinador no puede certificarse a sí mismo. | Una persona (o agente) independiente, en otra máquina. |
 
 ---
 
-## 5. Pendientes P0/P1 con prioridad y riesgo
+## 2. Capacidades de OpenCode V2: verificadas y NO verificadas
 
-| # | Pendiente | Sev | Riesgo si no se cierra | Siguiente paso |
-|---|---|---|---|---|
-| P0-1 | **Frontera de OS** (Job Object en Windows / contenedor + usuario mínimo + red bloqueada + límites de CPU/memoria/PIDs) | P0 | El código del candidato se ejecuta con los privilegios del operador | Implementar `Job Object` con `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` + `CREATE_SUSPENDED`; añadir test de contención con canario. Fallback: **no ejecutar** código no confiable (modo `DIFF_ONLY`) |
-| P0-2 | **Obtener el contrato** `ARENA_FORGE_ESPECIFICACION_TECNICA_INTEGRAL.md` | P0 | No se puede certificar nada de forma autoritativa | El usuario debe adjuntar el fichero o indicar la ruta |
-| P1-1 | **Despacho real de agentes** desde el runtime (o E2E autónomo documentado) | P1 | El E2E de Patch es **asistido**; no hay evidencia de autonomía | Implementar el despacho `subagent` con `session_ref`/`output_ref` reales, o declarar el E2E como assistido en todas partes |
-| P1-2 | **Permisos por candidato** (no por run) | P1 | Un implementer puede contaminar el workspace de un rival | Generar el `.md` del agente por candidato con rutas concretas, o validar en el harness que toda escritura está en su workspace |
-| P1-3 | **El score del juez participa en la decisión** | P1 | Un veredicto con score contradictorio pasa | Exigir que `raw_total` sea consistente con la etiqueta, o usar el score como desempate |
-| P1-4 | **Lock de run en todos los comandos mutadores** | P1 | `gates` y `apply` concurrentes pueden corromper `gates.json` | `acquire_lock`/`release_lock` con `FileLock` y token de propietario en `gates`, `report`, `apply`, `decide` |
-| P1-5 | **Contratos aplicados en todo el pipeline** | P1 | Artefactos malformados se aceptan en silencio | Validar run/candidate/gate/job en cada transición; rechazar `phase`/`status` arbitrarios |
-| P1-6 | **Ejecutar la CI** | P1 | AF-AC-012 sin verificar | Push → ejecutar GitHub Actions → adjuntar el resultado |
-| P1-7 | **AF-AC-016** | P1 | El valor adaptativo de E sigue sin evidencia | Dataset versionado con N dificultades × M repeticiones × 3 métodos; reportar acceptance/defects/latencia/llamadas |
-| P2-1 | Tests de timeout con árbol de procesos, tope de salida en disco y cuarentena oversize | P2 | Regresiones sin cobertura | Añadir a `GatesTest` |
-| P2-2 | Versionar los artefactos de run como evidencia reproducible | P2 | Los E2E no son reproducibles por un tercero | `demo/runs/<id>/` versionado |
-| P2-3 | `.opencode/config.json` de proyecto | P2 | Los agentes heredan la config global | Fijar el set base de permisos a nivel de proyecto |
+Fuente: `runtime/capabilities.json` (regenerado en esta ejecución).
 
----
-
-## 6. E2E: clasificados
-
-| Escenario | Clasificación | Resultado | Artefacto |
+| Capacidad | Estado | `by` | Evidencia |
 |---|---|---|---|
-| Patch Arena (init → gates → report → verify → apply → `git apply --check`) | **ASISTIDO** (un operador copió el fix al workspace) | WINNER; `git apply --check` exit 0; sha256 del parche = `diff_sha` del gate | [`e2e-patch.md`](e2e-patch.md) |
-| NO_SHIP (todos FAIL) | **ASISTIDO** | `NO_SHIP (ningun candidato supera los gates obligatorios)`, sin campeón ni parche | [`e2e-noship.md`](e2e-noship.md) |
-| Answer Arena | **NOT_RUN** | — | — |
-| Reanudación tras interrupción real a mitad de fase | **NOT_RUN** | — | — |
-| E2E autónomo (el runtime invoca al agente) | **NO EXISTE** | El runtime escribe briefs; el despacho es de otro nivel | `findings.md` §RES-4 |
+| `skills_native` | **verified** | functional_test | `id=arena-forge`, `path=.opencode/skills/arena-forge/SKILL.md` (280 skills en el runtime, servidor enraizado en el repo) |
+| `agent_profiles` | **verified** | filesystem | 4 perfiles: implementer, judge, reviewer, scout |
+| `state_on_disk` | **verified** | functional_test | Ida y vuelta real: crear → cerrar → reabrir → reanudar; ledger verificado |
+| `shell_tool` | **verified** (scope `host`) | host | Ejecución de comandos del **host**; **no** es el shell tool de OpenCode |
+| `cwd_control` | **verified** (scope `host`) | host | `cwd` de un subprocess local; **no** es una capacidad del runtime |
+| `python_runtime` | **verified** | platform | Python 3.12.4 |
+| `permission_rules` | **unknown** | static_analysis | Orden de reglas correcto (4 permisos) verificado **estáticamente**; la *enforcement* en runtime **no** está probada (requiere modelo) |
+| `subagent_tool` | **blocked** | functional_test | Requiere llamada a modelo; coste no autorizado |
+| `readonly_agent` | **blocked** | functional_test | Ídem |
+| `subagent_foreground` | **blocked** | derived | Derivado de `subagent_tool` (no se hace una 2ª llamada) |
+| `subagent_background` | **unknown** | none | NOT_RUN: sesión prolongada + modelo |
+| `plugin_api` | **unknown** | none | NOT_RUN: no se usa en el producto |
+
+Corrección relevante frente a la versión anterior: 4 capabilities estaban
+`verified` **sin prueba real** (el texto de ayuda de la CLIcontains "denied" y
+se leía como denegación; `state_on_disk` devolvía `True` incondicionalmente) y
+3 eran `unsupported` **por sintaxis inválida** (`opencode skill load` y
+`opencode run --prompt` no existen en v2.0.32). Ahora un error de invocación es
+`inconclusive`/`unknown`, nunca `unsupported`.
 
 ---
 
-## 6bis. Evidencia versionada (verificable por un tercero)
+## 3. Archivos añadidos y modificados
 
-eports/audit/artifacts/\ contiene la cadena de decision del E2E Patch:
+**Añadidos:** `forge/integrity.py` · `forge/stub_agent.py` · `tools/lint.py` ·
+`tools/test_lint.py` · `tools/probe_skill.py` · `tests/test_e2e_answer_arena.py` ·
+`pytest.ini` · `.gitattributes` · `.github/workflows/ci.yml` ·
+`docs/contract/` (el contrato) · `docs/ADR-006-aislamiento.md` ·
+`docs/superpowers/plans/` (plan) · `reports/audit/` (9 informes + artefactos) ·
+`fixtures/patch-demo/binary/sample.bin`.
 
-| Artefacto | Que demuestra |
+**Modificados:** `arena_forge.py` · `forge/{isolation,gates,report,adapter,agent_e,ledger,util,benchmark}.py` ·
+`tests/test_forge.py` · `.opencode/agents/{implementer,judge,reviewer}.md` ·
+`.opencode/skills/arena-forge/SKILL.md` · `README.md` · `VERIFICATION_SUMMARY.md` ·
+`CHANGELOG.md` · `docs/{THREAT_MODEL,ARCHITECTURE,RECONNAISSANCE}.md` ·
+`demo/*.md` · `runtime/*.json` · `.gitignore` · `PLAN_AUDIT_FIXES.md`.
+
+**No tocado:** `vendor/arena-skill/*` (upstream, hash intacto) · `LICENSE` ·
+`THIRD_PARTY_NOTICES.md` · cualquier proyecto ajeno a Arena Forge.
+
+---
+
+## 4. Cobertura unitaria, de integración y E2E
+
+| Capa | Dónde | Nº |
+|---|---|---|
+| Unitaria + integración | `tests/test_forge.py` | 118 |
+| E2E Answer Arena (stub) | `tests/test_e2e_answer_arena.py` | 9 |
+| Autotests del lint | `tools/test_lint.py` | 12 |
+| **Total** | | **139** |
+
+Contra las 22 pruebas obligatorias de §16: **7 cubiertas íntegras, 12 parciales,
+3 sin cobertura directa** (ver §6).
+
+---
+
+## 5. Comandos exactos y resultados
+
+```console
+$ python -m pytest tests/ -q --no-header -p no:cacheprovider --timeout=180
+112 passed, 1 skipped in 240.70s        (antes de las ultimas adiciones)
+
+$ python -m pytest tests/ -v ... --junitxml=...
+117 passed, 1 skipped                     (estado final; exit 0)
+
+$ python tools/lint.py --report
+lint propio: 16 ficheros analizados, 0 error(es), 18 aviso(s)
+build (compileall): OK
+herramientas ausentes -> NOT_RUN: ruff, mypy, flake8, pylint, pyright
+
+$ python tools/probe_skill.py
+AF-AC-003 sonda de skill: VERIFIED
+  id arena-forge   path .opencode/skills/arena-forge/SKILL.md   path_matches_repo True
+
+$ python reports/audit/compute_acceptance.py
+PASS 16 (88.9 %) · PARTIAL 2 (11.1 %) · FAIL 0 · NOT_RUN 0 · BLOCKED 0
+PONDERADO GLOBAL: 94.4 %   GLOBAL por area: 88.1 %
+
+$ git clone <repo> af-clean && cd af-clean && python -m pytest tests/ -q
+117 passed, 1 skipped                     (checkout limpio, LF)
+
+$ (GitHub Actions run 3, sha 93f7f2d)
+conclusion: success  —  windows-latest/py3.11, py3.12, ubuntu-latest/py3.11, py3.12
+```
+
+---
+
+## 6. Gates fallidos, bloqueados o no ejecutados
+
+| Ítem | Estado | Motivo |
+|---|---|---|
+| Aislamiento de nivel OS (AF-AC-010) | **PARTIAL** | No hay frontera de OS. Modo `TRUSTED_CODE_ONLY` declarado (ADR-006). |
+| Reproducción por tercero (AF-AC-014) | **PARTIAL** | Reproducido por el equipo; falta un tercero independiente (§23). |
+| Eficacia adaptativa de E (AF-AC-016) | **PASS por declaración** | §18 permite la declaración explícita; §23 mantiene la eficacia como hipótesis. Las 9 métricas de §4.9 **no** están medidas. |
+| Sondas con modelo (`subagent_tool`, `readonly_agent`) | **blocked** | Coste no autorizado. |
+| `mypy` / `ruff` / `pyright` (typecheck y lint externos) | **NOT_RUN** | No instalados; no se instalan globalmente. El lint propio y el build sí se ejecutan. |
+| `subagent_background`, `plugin_api` | **NOT_RUN** | No se usan en el producto. |
+| CI en GitHub Actions | **PASS** | Run 3 verde en 4 legs. |
+
+---
+
+## 7. Demostración de NO_SHIP
+
+`reports/audit/e2e-noship.md` — dos candidatos idénticos al baseline con el bug →
+ambos FAIL → `NO_SHIP (ningun candidato supera los gates obligatorios)`, sin
+campeón y **sin parche exportable** (`apply` aborta con
+`sin campeon: decision=NO_SHIP`).
+Test: `ReportTest::test_no_ship_when_every_candidate_fails_its_gate` (afirma la
+**causa exacta**, no solo el estado).
+
+---
+
+## 8. Prueba de aislamiento
+
+- Cada candidato tiene su propio workspace, validado **antes** de crear nada
+  (`ensure_workspaces` rechaza ids con separadores o `..`).
+- El gate **nunca** ejecuta en el árbol del proyecto: copia a un scratch.
+- El scratch usa la **misma** política de exclusiones que el manifiesto y el
+  parche (los `.pyc` ya no llegan).
+- El entorno del gate es allowlist: sin `HOME`/`TEMP` del operador, sin
+  user site-packages, sin plugins de pytest, con `PYTHONSAFEPATH`.
+- El árbol principal **no cambia**: `git status` antes/después y un paso de CI
+  (`git diff --exit-code`) lo comprueban.
+- Artefacto versionado: `reports/audit/artifacts/isolation.json`.
+
+**Lo que NO se demuestra:** contención de sistema operativo. Ver ADR-006.
+
+---
+
+## 9. Prueba de reanudación
+
+`tests/test_e2e_answer_arena.py::test_09_interruption_mid_phase_then_resume_without_duplicates`:
+se interrumpe a mitad de fase (spawn+attack hechos, sin `collect` ni `advance`),
+se reanuda, y se verifica que (a) los ficheros previos conservan su hash,
+(b) los 2 matches se cercioran exactamente una vez, (c) no se duplica ninguna
+ronda.
+Además `test_07`: `collect` es idempotente y `advance` avanza **una sola vez**
+(un segundo `advance` falla y no crea ronda).
+Y `ResumeCancelTest`: `resume` no reescribe `arena.json`; `cancel` congela el
+run y bloquea `collect`/`gates`/`report`/`apply`/`decide`.
+
+---
+
+## 10. Resultados contra baseline
+
+| | Baseline (bug) | Candidato corregido |
+|---|---|---|
+| `gate_engine.run_gate` | **FAIL** (`required_check_failed`) | **PASS** |
+| `report.resolve` | NO_SHIP | WINNER |
+| Parche exportado | — | `sha256 = c68f82cd…f59f` (= `diff_sha` del gate) |
+| `git apply --check` | — | exit 0 (con `core.autocrlf=false`) |
+
+La línea base de **método** (§16.12, "baseline adversarial: caso donde el método
+original gana; el informe lo dice") está **NO cubierta**: no hay un fixture en
+el que el método original gane. Declarado como hueco, no como PASS.
+
+---
+
+## 11. Valor incremental de E adaptativo
+
+**No medido.** `runtime/benchmark.json` lo declara de forma explícita:
+
+> "eficacia adaptativa de E vs orquestacion fija vs. agente unico (hipotesis pendiente, no demostrada aqui)"
+
+Las 9 métricas de §4.9 (tasa de aceptación, defectos escapados, coste/llamadas/
+duración, trabajos duplicados, % de rondas que cambian la decisión, rondas
+improductivas, falsos positivos/negativos de gates, esfuerzo humano,
+reproducibilidad) **no están medidas**. §23 lo confirma: la eficacia adaptativa
+solo se considera demostrada con una comparación reproducible con orquestación
+fija y agente único.
+
+Lo que sí está medido y es determinista: el scheduler reparte tarjetas sin
+repetir y termina en un único ganador (7 tamaños verificados).
+
+---
+
+## 12. Coste y duración observados; datos no medibles
+
+| Métrica | Valor |
 |---|---|
-| \gates.json\ | veredicto por candidato: estado, \suite_sha\, \candidate_manifest_sha\, \diff_sha\ |
-| \decision.json\ | decision persistida: \decision_id\ (ligado al contenido), \winner_id\, \diff_sha\ |
-| \isolation.json\ | prueba de aislamiento de los workspaces |
-| \ledger.jsonl\ | historial append-only con cadena de hashes |
-| un-20261019-210128-s31.patch\ | el parche round-trip exportado (parche Git real) |
-| \SHA256SUMS.txt\ | SHA-256 de cada artefacto |
+| Duración de la suite completa | 240–350 s (139 tests, Windows 11) |
+| Duración del E2E Answer (stub) | ~95 s para 9 tests |
+| Coste de modelo | **0** — el E2E usa un stub determinista; ninguna llamada a modelo ejecutada |
+| Llamadas de subagente | 0 (stub) |
+| Tokens / dinero | **no medible**: el proveedor no expone tokens por API (§12) |
+| CI | 4 legs × (3.11, 3.12) en Windows y Linux |
 
-Comprobacion (los tres hashes coinciden, verificado en la ejecucion):
+---
 
-\sha256(parche exportado) = c68f82cde82f99a62b22d055be908c13fa957222114deecd589c88a7f718f59f
-diff_sha del gate (cand-01) = c68f82cde82f99a62b22d055be908c13fa957222114deecd589c88a7f718f59f
-diff_sha de decision.json    = c68f82cde82f99a62b22d055be908c13fa957222114deecd589c88a7f718f59f
-\
-Ademas hay un **artefacto binario persistido**: \ixtures/patch-demo/binary/sample.bin(contiene NUL y una cola no-UTF-8), usado por
-\BinaryPatchTest::test_persisted_binary_fixture_roundtrip\, de modo que el
-round-trip binario es reproducible desde un checkout limpio.
+## 13. Riesgos residuales
 
-\AuditArtifactsTest\ verifica todo lo anterior **en la CI**.
+| # | Riesgo | Severidad | Estado |
+|---|---|---|---|
+| R-1 | El código del candidato se ejecuta con los privilegios del operador (sin Job Object/red bloqueada) | **P0** | Declarado (ADR-006, THREAT_MODEL) |
+| R-2 | Un candidato dentro del proceso de pytest puede, en principio, subvertir el oráculo del gate | P0 | Mitigado (informe JUnit + marcador `atexit` + recuento mínimo); **no cerrado** sin sandbox |
+| R-3 | Permisos de agente concedidos por run, no por candidato: un implementer podría escribir en el workspace de un rival | P1 | Abierto |
+| R-4 | El score del juez no participa en la decisión (solo la etiqueta X/Y) | P1 | Abierto |
+| R-5 | Lock de run ausente en `gates`/`report`/`apply` (el ledger y el presupuesto sí lo tienen) | P1 | Abierto |
+| R-6 | Contratos no aplicados en todas las transiciones | P1 | Abierto |
+| R-7 | `ledger.jsonl` es *tamper-evident*, no *tamper-proof* (sin ancla externa) | P2 | Aceptado y documentado |
+| R-8 | La suite protegida no está oculta del candidato (la lee, no la modifica) | P2 | Aceptado; el hash se comprueba antes y después |
+| R-9 | `with suite: null` la revalidación viva de la suite se omite en vez de fallar cerrado | P2 | Abierto |
+| R-10 | E2E de Answer con stub: valida la maquinaria, no la calidad de un modelo | P2 | Etiquetado (`stub_manifest.json`, banner `STUB` en cada artefacto) |
 
-## 7. Resultados de tests ejecutados
+---
 
-```console
-$ python -m pytest tests/ -v --no-header -p no:cacheprovider --timeout=180
-============ 117 passed, 1 skipped in 268.35s (0:04:28) ================
+## 14. Reproducción desde checkout limpio
+
+```bat
+git clone https://github.com/SOCRAMbt/arena-forge.git
+cd arena-forge
+python -m pip install "pytest>=8,<10"
+python -m pytest tests/ -q                      :: 117 passed, 1 skipped
+python tools/lint.py                            :: 0 errores
+python reports/audit/compute_acceptance.py      :: PASS 16 / PARTIAL 2
 ```
 
-- **exit code: 0** · **117 passed, 0 failed, 1 skipped**.
-- El único skip es **explícito y con motivo**: `IsolationTest::test_manifest_includes_mode`
-  — Windows no representa el bit de modo POSIX. En Linux ese test **sí** aserta.
-- Detalle por test (id, comando, exit code, versiones, commit, hashes de entrada,
-  artefactos, estado): [`test-results.json`](test-results.json).
-- Los tests **no escriben dentro del repo**; `git status --short` no muestra cambios
-  producidos por la suite.
-- `pytest tests/ -q` (sin `--timeout`) funciona igual; `pytest` a secas en la raíz ya no
-  recolecta la suite protegida de fixtures.
-
-Comandos adicionales ejecutados con salida real:
-
-| Comando | Exit | Observación |
-|---|---|---|
-| `python arena_forge.py init --mode patch ...` | 0 | Run creado, baseline no-Git con manifiesto |
-| `python arena_forge.py gates --dir <run>` | 0 | `cand-01: PASS`, `cand-02: FAIL` |
-| `python arena_forge.py report --dir <run>` | 0 | `WINNER`, `decision_id` persistido |
-| `python arena_forge.py verify --dir <run>` | 0 | 11/11 checks PASS |
-| `python arena_forge.py apply --dir <run> --approve` | 0 | Parche exportado; sha256 = `diff_sha` |
-| `git -c core.autocrlf=false apply --check <patch>` | 0 | En repo temporal |
-| `python arena_forge.py init --mode patch ...` (NO_SHIP) | 0 | Run de fallo |
-| `python arena_forge.py gates` / `report` (NO_SHIP) | 0 | `NO_SHIP` con causa exacta |
-| `python arena_forge.py adapter --probe` | 0 | Sondas honestas: 5 verified / 3 blocked / 1 inconclusive / 3 unknown |
-| `python arena_forge.py bench --seed 7` | 0 | AF-AC-016 sigue declarado NOT_RUN |
+Verificado por el equipo en un clone limpio (LF) y por GitHub Actions en 4 legs.
+**Pendiente:** que un tercero independiente lo repita (§23) — es lo que separa
+este entregable de `COMPLETE`.
 
 ---
 
-## 8. Estado final del árbol
+## 15. Tres siguientes pasos de mayor impacto, priorizados por evidencia
 
-```console
-$ git diff --check
-(sin errores de whitespace; solo avisos de normalización LF<->CRLF de git)
-
-$ git status --short
- M .gitignore
- M .opencode/agents/implementer.md
- M .opencode/agents/judge.md
- M .opencode/agents/reviewer.md
- M .opencode/skills/arena-forge/SKILL.md
- M CHANGELOG.md
- M README.md
- M VERIFICATION_SUMMARY.md
- M arena_forge.py
- M docs/RECONNAISSANCE.md
- M docs/THREAT_MODEL.md
- M forge/adapter.py
- M forge/agent_e.py
- M forge/benchmark.py
- M forge/gates.py
- M forge/isolation.py
- M forge/ledger.py
- M forge/report.py
- M forge/util.py
- M runtime/benchmark.json
- M runtime/capabilities.json
- M tests/test_forge.py
-?? .gitattributes
-?? .github/
-?? docs/superpowers/
-?? forge/integrity.py
-?? pytest.ini
-?? reports/audit/
-
-$ git diff --stat | tail -1
- 28 files changed, 4500 insertions(+), 1793 deletions(-)
-
-$ git rev-parse HEAD
-875c04ae1f7865c8043db651708d471c4a8d334e
-```
-
-Ningún fichero ajeno al alcance fue modificado. Los cambios del usuario previos
-(no había ninguno: el árbol solo tenía scratch no trackeado, preservado) siguen intactos.
+| # | Paso | Cierra | Esfuerzo | Por qué |
+|---|---|---|---|---|
+| 1 | **Job Object** en Windows (`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` + límites de memoria/PIDs) | R-1, R-2 (parcial) | **Bajo** — no requiere elevación | Es la única pieza que acerca el gate a un oráculo no falsificable, y el contrato la admite sin admin. |
+| 2 | **Reproducción por un tercero independiente** en otra máquina | AF-AC-014 → PASS; **desbloquea `COMPLETE`** | Bajo (coordinación) | Es el único criterio que separa NO-GO de COMPLETE (§23). |
+| 3 | **Permisos de agente por candidato** (plantilla generada con la ruta exacta) + test de denegación | R-3 | Medio | Cierra la contaminación entre candidatos, que hoy solo está documentada. |
 
 ---
 
-## 9. Limitaciones y evidencia que falta
+## Apéndice — Artefactos verificables por un tercero
 
-1. **El contrato funcional no está disponible** → las etiquetas PASS/PARTIAL/FAIL se
-   refieren al criterio *declarado en el mandato*, no al texto literal de la
-   especificación.
-2. **No hay CI ejecutada**: la matriz Windows/Linux existe pero no ha corrido.
-3. **No hay ejecución en Linux**: la portabilidad se razona (rutas derivadas del
-   checkout, `pytest.ini`, `.gitattributes`, `PATH` con fallback POSIX en el gate) pero
-   **no está verificada en un runner Linux**.
-4. **No hay E2E autónomo**: el despacho del agente está fuera del runtime.
-5. **No hay prueba de contención de OS**: el modo declarado no está respaldado por una
-   prueba de comportamiento.
-6. **No hay medición de AF-AC-016.**
-7. **Las sondas con modelo no se ejecutaron** (coste): `subagent_tool` y
-   `readonly_agent` siguen `blocked`.
-8. **El ledger no tiene ancla externa**: *tamper-evident*, no *tamper-proof*.
-9. **Los artefactos de los runs** viven en `.arena/` (ignorado por git). Mitigado: la
-   cadena de decision del E2E Patch y el parche round-trip estan versionados en
-   `reports/audit/artifacts/` (con `SHA256SUMS.txt` y tests que verifican la cadena).
+| Artefacto | Qué demuestra |
+|---|---|
+| `reports/audit/artifacts/gates.json` | Veredicto por candidato con `diff_sha` y `candidate_manifest_sha` |
+| `reports/audit/artifacts/decision.json` | Decisión persistida, `winner_id`, `decision_id` ligado al contenido |
+| `reports/audit/artifacts/isolation.json` | Prueba de aislamiento de los workspaces |
+| `reports/audit/artifacts/ledger.jsonl` | Historial append-only con cadena de hashes |
+| `reports/audit/artifacts/run-20261019-210128-s31.patch` | El parche round-trip evaluado |
+| `reports/audit/artifacts/SHA256SUMS.txt` | SHA-256 de cada artefacto (normalizado a LF) |
+| `reports/audit/artifacts/answer-e2e/` | Los 4 candidatos, ataques, defensas, veredictos y el campeón del E2E Answer |
+| `fixtures/patch-demo/binary/sample.bin` | Artefacto binario persistido (NUL + cola no-UTF-8) |
+| `docs/contract/` | El contrato, versionado, con su SHA-256 |
 
----
-
-## 10. Decisión
-
-### NO-GO para «COMPLETE / 100 %».
-
-**GO para lo que sí se puede afirmar con evidencia:**
-
-> El pipeline de integridad del candidato es ahora **verificable byte a byte**: el parche
-> que se entrega es el diff que se evaluó (sha256 idéntico), el parche aplicado reproduce
-> exactamente el árbol del candidato, la suite y el baseline se revalidan en el momento de
-> la decisión, un candidato no puede fabricar un PASS, y el presupuesto y la aprobación
-> humana de E son efectivos yLinked.
->
-> El pipeline de **integridad del entorno de ejecución** no lo es: sin frontera de sistema
-> operativo, el código del candidato se ejecuta con los privilegios del operador. Esa
-> diferencia se declara en el código, en el modelo de amenazas, en `verify` y en la
-> salida de `apply`.
-
-### No se hizo
-
-- No se hizo push hasta que el usuario lo autorizó explícitamente al final del encargo.
-- No se hizo merge, release, tag ni deploy.
-- No se ejecutó ninguna llamada a modelo con coste.
-- No se modificó ningún proyecto ajeno a Arena Forge.
-
-| RES-11 | P0 | **Un candidato que se importa dentro del proceso de pytest puede, en principio, falsificar el oráculo del gate.** Se ha añadido el marcador de finalización por `atexit` (que `os._exit` no ejecuta) y el recuento mínimo de tests, pero un candidato activamente hostil dentro del mismo proceso sigue siendo una amenaza. **Cerrarlo exige el sandbox de OS (BLQ-1)**. | OPEN (declarado) |
-| RES-12 | P1 | El parche exportado usa rutas **relativas al directorio del baseline**, no a la raíz del proyecto destino. `apply` indica el `--directory` correcto cuando el baseline está en un subdirectorio de un repo Git, pero el parche no es *self-contained* para otros usos. | OPEN |
-| RES-13 | P1 | Con `suite: null` en `forge.json`, la revalidación viva de la suite se omite en vez de fallar cerrado (el `suite_sha` congelado sigue comprobándose). | OPEN |
-| RES-14 | P2 | `verify` no valida que `phase`/`status` pertenezcan a `state.STATES`, ni comprueba todos los contratos en cada transición. | OPEN |
-| RES-15 | P2 | `agent_e.apply_budget` y `extra_round` siguen **sin ejecutor**: una aprobación humana válida para esas acciones termina en `failed`, no en ejecución. | OPEN |
+`sha256(parche) == diff_sha del gate == diff_sha de decision.json` —
+comprobado en la ejecución:
+`c68f82cde82f99a62b22d055be908c13fa957222114deecd589c88a7f718f59f`

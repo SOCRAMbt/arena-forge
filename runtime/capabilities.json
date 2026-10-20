@@ -2,8 +2,8 @@
  "version": "2.0.32",
  "platform": "Windows-11-10.0.26200-SP0",
  "python": "3.12.4",
- "probed": 1792449774,
- "probed_at": "2026-10-19T19:42:54-0300",
+ "probed": 1792456034,
+ "probed_at": "2026-10-19T21:27:14-0300",
  "opencode_executable": "../AppData/Roaming/npm/opencode.CMD",
  "capabilities": {
   "shell_tool": {
@@ -43,8 +43,8 @@
    "scope": "opencode"
   },
   "skills_native": {
-   "status": "inconclusive",
-   "evidence": "frontmatter valido: name=arena-forge description=222 chars; el runtime no la listo (rc=0). La ENFORCACION de carga por ID no esta probada",
+   "status": "verified",
+   "evidence": "skill arena-forge cargada por ID desde .opencode/skills/arena-forge/SKILL.md (280 skills en el runtime)",
    "by": "functional_test",
    "scope": "opencode"
   },

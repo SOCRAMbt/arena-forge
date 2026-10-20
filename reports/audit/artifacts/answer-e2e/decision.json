@@ -1,0 +1,13 @@
+{
+ "decision_id": "dec-answer-e2e-audit-d8adf8c8f939f614",
+ "decision": "WINNER",
+ "reason": "campeon del bracket answer: a001",
+ "winner_id": "a001",
+ "eligible": [],
+ "suite_sha": null,
+ "diff_sha": null,
+ "candidate_manifest_sha": null,
+ "ts": 1792456362,
+ "forge_repo_commit": "66b249ee409961ab5137986fc25ab71cbaae5b45",
+ "security_mode": "TRUSTED_CODE_ONLY"
+}

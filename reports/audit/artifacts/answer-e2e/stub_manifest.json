@@ -1,0 +1,14 @@
+{
+ "kind": "stub-agent",
+ "model": "none",
+ "calls": 0,
+ "cost": 0,
+ "phases_run": [
+  "attack",
+  "defend",
+  "judge",
+  "spawn"
+ ],
+ "inferior": "a003",
+ "updated": 1792456358
+}

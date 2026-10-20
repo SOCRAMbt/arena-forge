@@ -15,7 +15,13 @@ Metodología derivada de [`Jakeschincariol/arena-skill`](https://github.com/Jake
 (MIT, ver `THIRD_PARTY_NOTICES.md`), llevada a código real, aislamiento por
 candidato y reanudación total.
 
-> **Estado de la auditoría (2026-10-19): NO-GO.** Hay 2 P0 abiertos (sin frontera de
+> **Estado de la auditoría (2026-10-19): NO-GO.** 16 criterios PASS, 2 PARTIAL,
+> 0 FAIL/NOT_RUN/BLOCKED (ponderado 94.4 %). NO-GO por dos razones explícitas:
+> falta la **reproducción por un tercero independiente** (el contrato, §23, no
+> permite que el coordinador certifique su propio éxito) y el **aislamiento es de
+> nivel de ruta, no de sistema operativo**. El contrato de referencia está
+> versionado en `docs/contract/`. Detalle:
+> [`reports/audit/final-audit.md`](reports/audit/final-audit.md).
 > sistema operativo; contrato funcional no disponible) y 2 criterios NOT_RUN.
 > Ver [`reports/audit/final-audit.md`](reports/audit/final-audit.md).
 
@@ -30,7 +36,7 @@ candidato y reanudación total.
 ## Quickstart
 
 ```bat
-python -m pytest tests/ -q          :: 117 passed (+1 skip explicito)
+python -m pytest tests/ -q          :: 117 passed + 1 skip explicito
 python arena_forge.py plan --agents 4
 python arena_forge.py init --mode answer --agents 4 --seed 7 --task "..."
 python arena_forge.py next          :: manda la fase; prompts <fase> genera briefs
@@ -100,6 +106,8 @@ flowchart TD
 | Agente E | Aprobación humana **aplicada y ligada**; presupuesto **reservado** bajo lock de SO; `decisions.jsonl` append-only | `tests/test_forge.py::AgentETest` |
 | Sondas OpenCode | 5 `verified` (2 de scope `host`), 3 `blocked` (coste), 1 `inconclusive`, 3 `unknown` | `runtime/capabilities.json` |
 | Tests | **117 passed + 1 skip explicito** (Windows no representa el bit de modo POSIX), portables (sin rutas del host), sin ensuciar el repo | [`reports/audit/test-results.json`](reports/audit/test-results.json) |
+| E2E Answer Arena | 4 candidatos, ataques, defensas, jueces, collect, advance, decisión e informe — con **agente stub determinista** (coste 0): valida la maquinaria, no la calidad de un modelo | [`reports/audit/artifacts/answer-e2e/`](reports/audit/artifacts/answer-e2e/) |
+| Skill nativa | `id=arena-forge`, ruta exacta del repo, con servidor enraizado en el repo | `tools/probe_skill.py` |
 | Evidencia versionada | `sha256(parche) == diff_sha del gate == diff_sha de decision.json`, verificado en CI | [`reports/audit/artifacts/`](reports/audit/artifacts/) |
 
 ## ⚠️ Modo de seguridad: `TRUSTED_CODE_ONLY`
@@ -127,7 +135,8 @@ vendor/arena-skill/     bracket.py, strategies.json (2160 cartas), rubric.md, SK
 fixtures/               patch-demo (bug + suite protegida) · injection-test
 tests/                  118 tests stdlib (scheduler, CLI, gates, escape, NO_SHIP,
                         manifest, diff binario, baseline, E, adapter, portabilidad)
-docs/                   RECONNAISSANCE · ARCHITECTURE · THREAT_MODEL · 5 ADRs
+docs/                   RECONNAISSANCE · ARCHITECTURE · THREAT_MODEL · 6 ADRs
+docs/contract/          contrato de referencia versionado (SHA-256)
 reports/audit/          auditoría forense: baseline · findings · matrix · final
 reports/audit/artifacts/ evidencia versionada: gates · decision · ledger · parche
 .github/workflows/      CI Windows/Linux × Python 3.11/3.12

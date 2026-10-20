@@ -1,0 +1,29 @@
+{
+ "match": "r2-m01",
+ "scores": {
+  "a002": {
+   "correctness": 8,
+   "completeness": 7,
+   "specificity": 8,
+   "robustness": 8,
+   "clarity": 9,
+   "fatal": false
+  },
+  "a001": {
+   "correctness": 9,
+   "completeness": 8,
+   "specificity": 8,
+   "robustness": 8,
+   "clarity": 7,
+   "fatal": false
+  }
+ },
+ "winner": "a001",
+ "reason": "STUB: el juez comparo el contenido de las dos soluciones (hash determinista); no es una evaluacion de modelo.",
+ "survived": [],
+ "standing": {
+  "a002": [],
+  "a001": []
+ },
+ "stub": true
+}

@@ -671,6 +671,54 @@ class AuditArtifactsTest(unittest.TestCase):
                          r.stderr.decode("utf-8", "replace"))
 
 
+# ---------------------------------------- La matriz no puede desincronizarse
+class AcceptanceMatrixTest(unittest.TestCase):
+    """La matriz de aceptacion se GENERA desde acceptance-data.json.
+
+    Si el .md y los datos se desincronizan, la auditoria miente: este test lo
+    detecta (el defecto real que encontro la revision de documentacion).
+    """
+    AUD = os.path.join(FORGE_ROOT, "reports", "audit")
+
+    def test_matrix_markdown_matches_the_data(self):
+        sys.path.insert(0, self.AUD)
+        import compute_acceptance as ca
+        data = ca.load()
+        with open(ca.MATRIX, encoding="utf-8") as fh:
+            actual = fh.read()
+        self.assertEqual(ca.render(data), actual,
+                         "acceptance-matrix.md esta desincronizado: regenerar "
+                         "con `python reports/audit/compute_acceptance.py --write`")
+
+    def test_every_criterion_has_a_state_and_evidence(self):
+        sys.path.insert(0, self.AUD)
+        import compute_acceptance as ca
+        data = ca.load()
+        ids = [c["id"] for c in data["criteria"]]
+        self.assertEqual(len(ids), 18, "deben ser 18 criterios")
+        self.assertEqual(len(set(ids)), 18, "ids duplicados")
+        for c in data["criteria"]:
+            self.assertIn(c["state"], ca.ORDER, "%s: estado invalido" % c["id"])
+            self.assertTrue(c["evidence"].strip(), "%s: sin evidencia" % c["id"])
+            self.assertTrue(c["text"].strip(), "%s: sin texto de criterio" % c["id"])
+
+    def test_every_traceability_row_points_at_something(self):
+        sys.path.insert(0, self.AUD)
+        import compute_acceptance as ca
+        data = ca.load()
+        self.assertTrue(data.get("traceability"), "falta la matriz de trazabilidad")
+        for t in data["traceability"]:
+            self.assertTrue(t["evidence"].strip(), "%s: sin evidencia" % t["id"])
+
+    def test_contract_is_versioned_in_the_repo(self):
+        contract = os.path.join(FORGE_ROOT, "docs", "contract",
+                                "ARENA_FORGE_ESPECIFICACION_TECNICA_INTEGRAL.md")
+        self.assertTrue(os.path.isfile(contract),
+                        "el contrato debe estar versionado para que la "
+                        "auditoria sea reproducible")
+        self.assertGreater(os.path.getsize(contract), 10000)
+
+
 # ------------------------------------------- §16.7/§16.9/§16.19 gates
 class GatesTest(unittest.TestCase):
     @unittest.skipUnless(has_pytest(), "pytest no instalado")
