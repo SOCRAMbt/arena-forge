@@ -109,10 +109,10 @@ se leía como denegación; `state_on_disk` devolvía `True` incondicionalmente) 
 
 | Capa | Dónde | Nº |
 |---|---|---|
-| Unitaria + integración | `tests/test_forge.py` | 118 |
+| Unitaria + integración | `tests/test_forge.py` | 123 |
 | E2E Answer Arena (stub) | `tests/test_e2e_answer_arena.py` | 9 |
-| Autotests del lint | `tools/test_lint.py` | 12 |
-| **Total** | | **139** |
+| Autotests del lint | `tools/test_lint.py` | 14 |
+| **Total** | | **146** (145 pass + 1 skip explicito) |
 
 Contra las 22 pruebas obligatorias de §16: **7 cubiertas íntegras, 12 parciales,
 3 sin cobertura directa** (ver §6).
@@ -122,14 +122,17 @@ Contra las 22 pruebas obligatorias de §16: **7 cubiertas íntegras, 12 parciale
 ## 5. Comandos exactos y resultados
 
 ```console
-$ python -m pytest tests/ -q --no-header -p no:cacheprovider --timeout=180
-112 passed, 1 skipped in 240.70s        (antes de las ultimas adiciones)
+$ python -m pytest tests/ tools/test_lint.py -q --no-header -p no:cacheprovider --timeout=180
+145 passed, 1 skipped                     (estado final; exit 0)
 
-$ python -m pytest tests/ -v ... --junitxml=...
-117 passed, 1 skipped                     (estado final; exit 0)
+$ python -m pytest tests/ -q            (lo que ejecuta la CI)
+131 passed, 1 skipped
+
+$ python -m pytest tools/test_lint.py -q
+14 passed
 
 $ python tools/lint.py --report
-lint propio: 16 ficheros analizados, 0 error(es), 18 aviso(s)
+lint propio: 18 ficheros analizados, 0 error(es), 25 aviso(s)
 build (compileall): OK
 herramientas ausentes -> NOT_RUN: ruff, mypy, flake8, pylint, pyright
 
@@ -142,10 +145,15 @@ PASS 16 (88.9 %) · PARTIAL 2 (11.1 %) · FAIL 0 · NOT_RUN 0 · BLOCKED 0
 PONDERADO GLOBAL: 94.4 %   GLOBAL por area: 88.1 %
 
 $ git clone <repo> af-clean && cd af-clean && python -m pytest tests/ -q
-117 passed, 1 skipped                     (checkout limpio, LF)
+131 passed, 1 skipped                     (checkout limpio, LF)
 
-$ (GitHub Actions run 3, sha 93f7f2d)
+$ (GitHub Actions run 7, sha 01dbb55)
 conclusion: success  —  windows-latest/py3.11, py3.12, ubuntu-latest/py3.11, py3.12
+
+$ (historial: run 1..2 fallaron, run 3 verde, runs 4..6 fallaron, run 7 verde)
+El fallo de los runs 4-6 era SOLO en Windows: `os.path.relpath` lanza
+ValueError cuando repo y temporal estan en unidades distintas (D:\ vs C:\ en
+los runners). Corregido en tools/lint.py y con un test que lo reproduce.
 ```
 
 ---
@@ -160,7 +168,7 @@ conclusion: success  —  windows-latest/py3.11, py3.12, ubuntu-latest/py3.11, p
 | Sondas con modelo (`subagent_tool`, `readonly_agent`) | **blocked** | Coste no autorizado. |
 | `mypy` / `ruff` / `pyright` (typecheck y lint externos) | **NOT_RUN** | No instalados; no se instalan globalmente. El lint propio y el build sí se ejecutan. |
 | `subagent_background`, `plugin_api` | **NOT_RUN** | No se usan en el producto. |
-| CI en GitHub Actions | **PASS** | Run 3 verde en 4 legs. |
+| CI en GitHub Actions | **PASS** | Run 7 verde en 4 legs (Windows/Linux x 3.11/3.12). |
 
 ---
 
