@@ -39,8 +39,14 @@ jobs:
             exit 1
           fi
 
-      - name: Bytecode compile check
-        run: python -m compileall -q arena_forge.py forge tests
+      - name: Bytecode compile check (build)
+        run: python -m compileall -q arena_forge.py forge tests tools
+
+      - name: Lint (propio, sin dependencias externas)
+        run: python tools/lint.py
+
+      - name: Lint self-tests (control negativo del lint)
+        run: python -m pytest tools/test_lint.py -q
 
       - name: CLI smoke (init + gates + report + apply)
         shell: bash
